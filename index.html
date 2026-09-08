@@ -1,0 +1,2438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+<meta name="theme-color" content="#050914" />
+<title>Chronosphere — The Journey of Earth</title>
+<style>
+/* ============================================================
+   CHRONOSPHERE — The Journey of Earth
+   Single-file interactive experience. No external dependencies.
+   ============================================================ */
+
+:root{
+  --bg:#050914;
+  --bg-2:#0a1024;
+  --ink:#eaf0ff;
+  --ink-dim:#9fb0d8;
+  --ink-faint:#6d7ca8;
+  --panel:rgba(18,26,54,.62);
+  --panel-solid:#111a34;
+  --stroke:rgba(140,170,255,.16);
+  --stroke-2:rgba(140,170,255,.30);
+  --accent:#5cc8ff;
+  --accent-2:#ff7ac6;
+  --glow:0 0 24px rgba(92,200,255,.35);
+  --radius:18px;
+  --shadow:0 20px 60px rgba(0,0,0,.55);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+body.no-scroll{overflow:hidden}
+
+/* fixed animated backdrop */
+#sky{position:fixed;inset:0;z-index:0;display:block;width:100%;height:100%}
+#veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% -10%, transparent 40%, rgba(5,9,20,.55) 100%);
+  transition:background 1.2s ease;}
+
+.wrap{position:relative;z-index:2}
+
+/* ---------------- top nav ---------------- */
+header.nav{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:14px;
+  padding:12px clamp(14px,3vw,34px);
+  backdrop-filter:blur(14px);
+  background:linear-gradient(180deg, rgba(5,9,20,.86), rgba(5,9,20,.35));
+  border-bottom:1px solid var(--stroke);
+}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.4px;font-size:18px}
+.brand .orb{
+  width:30px;height:30px;border-radius:50%;
+  background:conic-gradient(from 210deg,#3b6cff,#39d0c9,#7ef0a2,#ffe36b,#ff7a59,#c04bff,#3b6cff);
+  box-shadow:0 0 18px rgba(120,180,255,.7), inset 0 0 8px rgba(0,0,0,.4);
+  animation:spin 18s linear infinite;flex:0 0 auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--ink-faint);letter-spacing:2px;text-transform:uppercase}
+.nav-tabs{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.nav-tabs button{
+  font:inherit;font-size:13px;font-weight:600;color:var(--ink-dim);
+  background:transparent;border:1px solid transparent;border-radius:999px;
+  padding:8px 14px;cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.nav-tabs button:hover{color:var(--ink);background:rgba(120,160,255,.10)}
+.nav-tabs button.active{color:#04101f;background:linear-gradient(120deg,var(--accent),#8ce0ff);box-shadow:var(--glow)}
+.menu-btn{display:none}
+
+/* ---------------- sections ---------------- */
+section.view{display:none;min-height:70vh;padding:clamp(20px,4vw,54px) clamp(14px,4vw,54px) 90px}
+section.view.active{display:block;animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+h1.big{font-size:clamp(30px,6vw,68px);line-height:1.02;margin:0 0 14px;font-weight:850;
+  background:linear-gradient(120deg,#fff,#bcd3ff 45%,#8ce0ff 70%,#ff9ad6);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+h2.sec{font-size:clamp(22px,3.4vw,38px);margin:0 0 6px;font-weight:800}
+.lead{font-size:clamp(15px,1.8vw,19px);color:var(--ink-dim);max-width:70ch;line-height:1.6}
+
+/* ---------------- HERO ---------------- */
+#view-hero{flex-direction:column;justify-content:center;min-height:calc(100vh - 62px);text-align:center;align-items:center}
+#view-hero.active{display:flex}
+.hero-inner{max-width:920px}
+.hero-planet{width:min(46vw,320px);height:min(46vw,320px);margin:0 auto 26px;position:relative}
+.hero-planet .globe{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 32% 28%, #bfe9ff 0%, #4aa3e0 22%, #1c5fb0 46%, #0a2f6b 70%, #051633 100%);
+  box-shadow:0 0 70px rgba(60,130,255,.5), inset -22px -18px 60px rgba(0,0,0,.6), inset 16px 14px 40px rgba(160,220,255,.35);
+  overflow:hidden;
+}
+.hero-planet .land{position:absolute;inset:0;border-radius:50%;opacity:.9;mix-blend-mode:screen;
+  background:
+   radial-gradient(22% 16% at 40% 40%, rgba(80,210,120,.9), transparent 60%),
+   radial-gradient(16% 24% at 62% 58%, rgba(90,200,110,.85), transparent 60%),
+   radial-gradient(12% 10% at 30% 68%, rgba(120,220,140,.8), transparent 60%),
+   radial-gradient(10% 14% at 70% 30%, rgba(70,190,110,.75), transparent 60%);
+  animation:drift 24s linear infinite;
+}
+.hero-planet .cloud{position:absolute;inset:-6%;border-radius:50%;opacity:.5;mix-blend-mode:screen;
+  background:
+   radial-gradient(18% 8% at 46% 34%, #fff, transparent 60%),
+   radial-gradient(22% 9% at 66% 62%, #fff, transparent 60%),
+   radial-gradient(14% 7% at 30% 56%, #fff, transparent 60%);
+  animation:drift 40s linear infinite reverse;filter:blur(2px)}
+@keyframes drift{to{transform:rotate(360deg)}}
+.hero-planet .ring{position:absolute;inset:-14%;border-radius:50%;border:1px solid rgba(140,220,255,.25);
+  box-shadow:0 0 40px rgba(120,180,255,.2) inset;animation:spin 30s linear infinite}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.btn{
+  font:inherit;font-weight:700;font-size:15px;cursor:pointer;border-radius:999px;
+  padding:14px 26px;border:1px solid var(--stroke-2);color:var(--ink);
+  background:rgba(120,160,255,.10);transition:.18s;
+}
+.btn:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--glow)}
+.btn.primary{background:linear-gradient(120deg,var(--accent),#7ad0ff);color:#04101f;border-color:transparent}
+.hero-stats{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+.hero-stats .s{min-width:120px}
+.hero-stats .s b{display:block;font-size:clamp(22px,3vw,34px);font-weight:850;color:#fff}
+.hero-stats .s span{font-size:12px;color:var(--ink-faint);letter-spacing:1px;text-transform:uppercase}
+.scroll-hint{margin-top:40px;color:var(--ink-faint);font-size:12px;letter-spacing:2px}
+
+/* ---------------- TIMELINE stage ---------------- */
+.stage{
+  display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:stretch;
+  margin-top:10px;
+}
+.panel{
+  background:var(--panel);backdrop-filter:blur(16px);
+  border:1px solid var(--stroke);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:clamp(18px,2.4vw,30px);
+}
+.stage-visual{position:relative;min-height:340px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.era-badge{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+  font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  padding:6px 14px;border-radius:999px;border:1px solid var(--stroke-2);color:#fff}
+.era-badge .dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.scene{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:200px}
+.scene .emoji{font-size:clamp(72px,14vw,140px);line-height:1;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));
+  transition:transform .5s cubic-bezier(.2,.9,.2,1), opacity .4s;animation:bob 5s ease-in-out infinite}
+.scene .emoji.is-cre{font-size:0}
+.scene-cre{width:clamp(180px,34vw,300px);height:auto;display:block}
+@keyframes bob{50%{transform:translateY(-12px)}}
+.scene .subemoji{position:absolute;font-size:clamp(26px,5vw,44px);opacity:.85;animation:float 8s ease-in-out infinite}
+.mya-tag{font-family:var(--mono);font-size:clamp(30px,5vw,52px);font-weight:800;color:#fff;letter-spacing:-1px}
+.mya-tag small{font-size:14px;color:var(--ink-dim);font-family:var(--font);font-weight:600;margin-left:8px;letter-spacing:1px}
+
+.stage-info h3{font-size:clamp(20px,2.6vw,30px);margin:6px 0 4px;font-weight:800}
+.stage-info .cat{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.stage-info p{color:var(--ink-dim);line-height:1.65;font-size:15px}
+.factlist{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
+.factlist li{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-dim)}
+.factlist li .ic{flex:0 0 auto;color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{font-size:12px;padding:5px 11px;border-radius:999px;background:rgba(120,160,255,.10);
+  border:1px solid var(--stroke);color:var(--ink-dim)}
+
+/* ---------------- timeline scrubber ---------------- */
+.tl{margin-top:22px}
+.tl-eras{display:flex;height:20px;border-radius:8px;overflow:hidden;border:1px solid var(--stroke);margin-bottom:6px}
+.tl-eras .band{position:relative;cursor:pointer;transition:filter .2s}
+.tl-eras .band:hover{filter:brightness(1.25)}
+.tl-eras .band span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;letter-spacing:.5px;color:rgba(0,0,0,.7);text-transform:uppercase;
+  overflow:hidden;white-space:nowrap}
+.scrubber{position:relative;height:56px;user-select:none;touch-action:none;cursor:grab}
+.scrubber:active{cursor:grabbing}
+.track{position:absolute;left:0;right:0;top:26px;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,#3a1d5e,#7a2d6d,#c0392b,#e08e2a,#3aa76d,#2f6fd0,#37c6c0)}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:rgba(255,255,255,.85);mix-blend-mode:overlay}
+.ticks{position:absolute;left:0;right:0;top:6px;height:16px}
+.ticks .t{position:absolute;top:0;width:1px;height:8px;background:var(--stroke-2)}
+.ticks .t.major{height:14px;background:var(--ink-faint)}
+.ticks .t label{position:absolute;top:16px;left:0;transform:translateX(-50%);font-size:9px;color:var(--ink-faint);font-family:var(--mono);white-space:nowrap}
+.marker{position:absolute;top:12px;width:2px;height:34px;background:var(--accent);box-shadow:var(--glow);pointer-events:none}
+.handle{position:absolute;top:14px;width:22px;height:22px;border-radius:50%;margin-left:-11px;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--accent) 70%);
+  box-shadow:0 0 0 4px rgba(92,200,255,.25),0 6px 18px rgba(0,0,0,.5);pointer-events:none}
+.event-dots{position:absolute;left:0;right:0;top:20px;height:18px;pointer-events:none}
+.event-dots .ed{position:absolute;top:2px;width:8px;height:8px;border-radius:50%;margin-left:-4px;
+  border:1.5px solid rgba(5,9,20,.8);transition:transform .2s}
+
+/* controls */
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.ctrl{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  border:1px solid var(--stroke-2);background:rgba(120,160,255,.10);color:var(--ink);transition:.18s}
+.ctrl:hover{border-color:var(--accent);box-shadow:var(--glow);color:#fff}
+.ctrl svg{width:20px;height:20px}
+.ctrl.play{width:58px;height:58px;background:linear-gradient(120deg,var(--accent),#7ad0ff);color:#04101f;border:none}
+.speed{display:flex;gap:4px;margin-left:6px;background:rgba(0,0,0,.25);border:1px solid var(--stroke);border-radius:999px;padding:4px}
+.speed button{font:inherit;font-size:12px;font-weight:700;color:var(--ink-dim);background:transparent;border:none;
+  border-radius:999px;padding:6px 12px;cursor:pointer}
+.speed button.on{background:var(--accent);color:#04101f}
+.jump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.jump button{font:inherit;font-size:12px;font-weight:700;color:var(--ink-dim);background:rgba(120,160,255,.08);
+  border:1px solid var(--stroke);border-radius:999px;padding:7px 12px;cursor:pointer;transition:.15s}
+.jump button:hover{color:#fff;border-color:var(--accent)}
+.keyhint{margin-top:14px;font-size:12px;color:var(--ink-faint);display:flex;gap:14px;flex-wrap:wrap}
+.keyhint kbd{font-family:var(--mono);background:rgba(255,255,255,.06);border:1px solid var(--stroke);
+  border-bottom-width:2px;border-radius:6px;padding:2px 7px;font-size:11px;color:var(--ink-dim)}
+
+/* progress readout */
+.readout{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;gap:8px}
+.readout .now{font-family:var(--mono);font-size:13px;color:var(--ink-dim)}
+
+/* ---------------- generic card grids ---------------- */
+.grid{display:grid;gap:18px;margin-top:26px}
+.grid.g3{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.grid.g4{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.card{
+  background:var(--panel);backdrop-filter:blur(12px);border:1px solid var(--stroke);
+  border-radius:16px;padding:20px;transition:.2s;position:relative;overflow:hidden;cursor:default}
+.card:hover{transform:translateY(-4px);border-color:var(--stroke-2);box-shadow:var(--shadow)}
+.card .ce{font-size:40px;line-height:1;margin-bottom:12px;display:block}
+.card h4{margin:0 0 6px;font-size:17px;font-weight:800}
+.card .meta{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px}
+.card p{margin:0;color:var(--ink-dim);font-size:13.5px;line-height:1.55}
+.card .barwrap{margin-top:12px}
+.card .bar{height:6px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.card .bar i{display:block;height:100%;border-radius:6px}
+.card .barlabel{font-size:10px;color:var(--ink-faint);margin-top:5px;font-family:var(--mono)}
+
+/* animal gallery */
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.filterbar button{font:inherit;font-size:12.5px;font-weight:700;color:var(--ink-dim);
+  background:rgba(120,160,255,.08);border:1px solid var(--stroke);border-radius:999px;padding:8px 14px;cursor:pointer;transition:.15s}
+.filterbar button:hover{color:#fff}
+.filterbar button.on{background:linear-gradient(120deg,var(--accent),#7ad0ff);color:#04101f;border-color:transparent}
+.animal{cursor:pointer}
+.animal .era-pill{position:absolute;top:14px;right:14px;font-size:10px;font-weight:800;
+  padding:3px 8px;border-radius:999px;color:#04101f;z-index:2}
+.cre-wrap{height:78px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:10px}
+.cre{width:118px;height:74px;overflow:visible;transition:transform .3s cubic-bezier(.2,.9,.2,1);
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
+.animal:hover .cre{transform:scale(1.12) translateY(-3px)}
+.modal-cre{width:180px;height:110px;margin:0 auto;display:block}
+
+/* ocean depth explorer */
+.ocean{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--stroke);margin-top:24px}
+.ocean-layer{padding:26px clamp(18px,3vw,40px);position:relative;min-height:150px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.ocean-layer .depth{font-family:var(--mono);font-size:13px;opacity:.9;min-width:130px}
+.ocean-layer .txt{flex:1;min-width:220px}
+.ocean-layer h4{margin:0 0 6px;font-size:19px}
+.ocean-layer p{margin:0;font-size:13.5px;line-height:1.55;opacity:.92}
+.ocean-layer .fauna{font-size:34px;letter-spacing:6px}
+
+/* human evolution path */
+.evopath{margin-top:26px;display:flex;flex-direction:column;gap:0;position:relative}
+.evostep{display:grid;grid-template-columns:120px 1fr;gap:20px;padding:20px 0;border-bottom:1px dashed var(--stroke);align-items:center}
+.evostep:last-child{border-bottom:none}
+.evostep .when{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:700}
+.evostep .who{display:flex;align-items:center;gap:16px}
+.evostep .face{font-size:52px;line-height:1}
+.evostep h4{margin:0 0 4px;font-size:19px}
+.evostep p{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.55;max-width:70ch}
+
+/* extinction bars */
+.exwrap{margin-top:24px;display:flex;flex-direction:column;gap:18px}
+.exrow{background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:18px 20px}
+.exrow .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.exrow h4{margin:0;font-size:17px}
+.exrow .pct{font-family:var(--mono);font-weight:800;font-size:22px}
+.exrow .bar{margin-top:12px;height:14px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden}
+.exrow .bar i{display:block;height:100%;background:linear-gradient(90deg,#ff9a59,#ff4d6d);border-radius:8px}
+.exrow p{margin:10px 0 0;color:var(--ink-dim);font-size:13.5px;line-height:1.55}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:20px;
+  background:rgba(3,6,15,.7);backdrop-filter:blur(6px)}
+.modal.open{display:grid;animation:fade .25s ease}
+.modal .box{max-width:520px;width:100%;background:var(--panel-solid);border:1px solid var(--stroke-2);
+  border-radius:20px;padding:30px;box-shadow:var(--shadow);position:relative}
+.modal .box .big-e{font-size:76px;text-align:center;display:block;margin-bottom:6px}
+.modal .box h3{margin:0 0 4px;font-size:26px;text-align:center}
+.modal .box .sub{text-align:center;color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:16px}
+.modal .box p{color:var(--ink-dim);line-height:1.6;font-size:14.5px}
+.modal .box .kv{display:flex;gap:10px;margin-top:10px;font-size:13px}
+.modal .box .kv b{color:var(--ink);min-width:90px}
+.modal .close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--stroke);background:rgba(255,255,255,.05);color:var(--ink);cursor:pointer;font-size:18px}
+.modal .close:hover{border-color:var(--accent)}
+
+/* footer */
+footer{position:relative;z-index:2;padding:40px clamp(14px,4vw,54px);border-top:1px solid var(--stroke);
+  color:var(--ink-faint);font-size:13px;text-align:center;line-height:1.7}
+footer a{color:var(--accent);text-decoration:none}
+
+/* toast for keyboard feedback */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(10,16,36,.95);border:1px solid var(--stroke-2);color:var(--ink);
+  padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:90;opacity:0;
+  transition:.3s;pointer-events:none;box-shadow:var(--shadow)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------------- planet snapshot (drift + vitals) ---------------- */
+.snapshot{margin-top:18px;display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:stretch}
+.snap-h{font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:var(--ink);margin-bottom:12px}
+.snap-h span{color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:none;font-size:13px;margin-left:6px}
+.snap-cap{font-size:11.5px;color:var(--ink-faint);line-height:1.5;margin-top:12px}
+.snap-map{display:flex;flex-direction:column}
+.drift{width:100%;max-width:240px;margin:0 auto;display:block;aspect-ratio:1;filter:drop-shadow(0 14px 30px rgba(0,0,0,.5))}
+.drift .ocean{transition:fill 1s ease}
+.drift .stage{transition:opacity .6s ease}
+.vitals{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.vital{background:rgba(0,0,0,.22);border:1px solid var(--stroke);border-radius:12px;padding:12px 14px}
+.vital .vh{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+.vital .vv{font-family:var(--mono);font-size:22px;font-weight:800;color:#fff;margin:5px 0 2px;line-height:1}
+.vital .vv small{font-size:12px;color:var(--ink-dim);font-weight:600;margin-left:3px}
+.vital .vbar{height:5px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+.vital .vbar i{display:block;height:100%;border-radius:5px;transition:width .4s ease, background .4s ease}
+
+/* ---------------- lineage ---------------- */
+.lineage-panel{margin-top:18px}
+.lineage-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.lineage{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding:20px 4px 8px;margin-top:14px;scrollbar-width:thin}
+.lineage .node{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;width:112px;position:relative;cursor:pointer}
+.lineage .node::before{content:"";position:absolute;top:24px;left:-50%;width:100%;height:3px;
+  background:linear-gradient(90deg,rgba(92,200,255,.15),rgba(92,200,255,.6));z-index:0}
+.lineage .node:first-child::before{display:none}
+.lineage .node .bead{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-size:26px;
+  background:var(--panel-solid);border:2px solid var(--stroke-2);position:relative;z-index:1;transition:.25s}
+.lineage .node:hover .bead,.lineage .node.on .bead{border-color:var(--accent);box-shadow:var(--glow);transform:scale(1.12)}
+.lineage .node.on .bead{background:linear-gradient(120deg,var(--accent),#7ad0ff)}
+.lineage .node .nt{font-size:11px;font-weight:700;color:var(--ink);margin-top:8px;line-height:1.2}
+.lineage .node .nw{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:2px}
+
+/* ---------------- charts (climate) ---------------- */
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.chart-head h3{margin:0;font-size:clamp(16px,2.2vw,21px)}
+.legend{display:flex;gap:16px;flex-wrap:wrap}
+.legend .lg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-dim)}
+.legend .lg i{width:14px;height:4px;border-radius:3px;display:inline-block}
+.chart-wrap{width:100%;overflow-x:auto}
+.chart-wrap svg{width:100%;min-width:520px;height:auto;display:block}
+.chart-note{font-size:12px;color:var(--ink-faint);line-height:1.55;margin:10px 0 0}
+.axis{stroke:var(--stroke);stroke-width:1}
+.axis-label{fill:var(--ink-faint);font-size:11px;font-family:var(--mono)}
+.grid-line{stroke:rgba(255,255,255,.05);stroke-width:1}
+
+/* scenario slider */
+.scenario{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.scenario input[type=range]{flex:1;min-width:220px;accent-color:var(--accent);height:6px}
+.scenario-out{min-width:200px}
+.scenario-temp{font-family:var(--mono);font-size:34px;font-weight:850;line-height:1}
+.scenario-name{font-weight:800;font-size:15px;margin-top:4px}
+.scenario-desc{color:var(--ink-dim);font-size:13px;margin-top:4px;line-height:1.5;max-width:44ch}
+
+/* ---------------- cosmic calendar / scale ---------------- */
+.scale-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.scale-metrics button{font:inherit;font-size:13.5px;font-weight:700;color:var(--ink-dim);
+  background:rgba(120,160,255,.08);border:1px solid var(--stroke);border-radius:999px;padding:10px 18px;cursor:pointer;transition:.15s}
+.scale-metrics button:hover{color:#fff}
+.scale-metrics button.on{background:linear-gradient(120deg,var(--accent),#7ad0ff);color:#04101f;border-color:transparent}
+.agelabel{font-size:14px;color:var(--ink-dim)}
+.agelabel input{font:inherit;width:70px;background:rgba(0,0,0,.3);border:1px solid var(--stroke-2);color:#fff;
+  border-radius:8px;padding:6px 10px;margin:0 4px}
+.scale-headline{font-size:clamp(17px,2.6vw,26px);font-weight:800;line-height:1.35;margin-bottom:18px}
+.scale-headline b{color:var(--accent)}
+.scale-bar{position:relative;height:46px;border-radius:10px;margin:24px 0 40px;
+  background:linear-gradient(90deg,#3a1d5e,#7a2d6d,#c0392b,#e08e2a,#3aa76d,#2f6fd0,#37c6c0);border:1px solid var(--stroke)}
+.scale-bar .pin{position:absolute;top:-8px;width:2px;height:62px;background:#fff}
+.scale-bar .pin span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:6px}
+.scale-bar .pin.low span{top:auto;bottom:-24px}
+.scale-bar .pin.pin-r span{left:auto;right:0;transform:none}
+.scale-bar .pin.pin-l span{left:0;transform:none}
+.scale-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.scale-item{display:flex;gap:12px;align-items:center;background:rgba(0,0,0,.2);border:1px solid var(--stroke);border-radius:12px;padding:12px 14px}
+.scale-item .se{font-size:26px}
+.scale-item .sd b{display:block;font-size:14px}
+.scale-item .sd span{font-size:12px;color:var(--accent);font-family:var(--mono)}
+.scale-item .sd small{display:block;color:var(--ink-faint);font-size:11px}
+
+/* ---------------- share row + postcard ---------------- */
+.share-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn.ghost{padding:10px 16px;font-size:13px;background:rgba(120,160,255,.06)}
+kbd.k,.lead kbd{font-family:var(--mono);background:rgba(255,255,255,.08);border:1px solid var(--stroke);
+  border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:12px;color:var(--ink-dim)}
+.pc-box{max-width:640px}
+#pcCanvas{width:100%;height:auto;border-radius:12px;border:1px solid var(--stroke);display:block}
+.pc-actions{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.pc-actions .btn{text-decoration:none}
+
+/* ---------------- quiz ---------------- */
+.quiz,.quiz-result{max-width:720px;margin:24px auto 0}
+.quiz-result{max-width:520px}
+.quiz-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--ink-dim);font-family:var(--mono)}
+.quiz-top b{color:#fff}
+.quiz-stage{height:148px;display:flex;align-items:center;justify-content:center;margin:8px 0}
+.quiz-cre{width:210px;height:138px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
+.quiz-q{font-size:19px;font-weight:700;text-align:center;line-height:1.4}
+.quiz-q .quiz-hint{display:block;font-size:13px;font-weight:500;color:var(--ink-dim);margin:8px auto 0;max-width:52ch}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.quiz-opt{display:flex;align-items:center;gap:10px;font:inherit;font-size:15px;font-weight:700;color:var(--ink);
+  background:rgba(120,160,255,.08);border:1px solid var(--stroke-2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:.15s;text-align:left}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);background:rgba(120,160,255,.16);transform:translateY(-2px)}
+.quiz-opt kbd{font-family:var(--mono);background:rgba(0,0,0,.3);border:1px solid var(--stroke);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--ink-dim);flex:0 0 auto}
+.quiz-opt.correct{background:rgba(46,204,113,.25);border-color:#2ecc71;color:#fff}
+.quiz-opt.wrong{background:rgba(255,90,110,.22);border-color:#ff5a6e}
+.quiz-opt:disabled{cursor:default}
+.quiz-feedback{min-height:22px;text-align:center;margin-top:16px;font-weight:700;font-size:14px}
+.quiz-feedback.good{color:#4ee08a}
+.quiz-feedback.bad{color:#ff8a9a}
+
+/* ---------------- theme button ---------------- */
+.theme-btn{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;flex:0 0 auto;
+  border:1px solid var(--stroke-2);background:rgba(120,160,255,.10);color:var(--ink);cursor:pointer;font-size:18px;transition:.15s}
+.theme-btn:hover{border-color:var(--accent);box-shadow:var(--glow)}
+
+/* ---------------- story mode overlay ---------------- */
+#storyOverlay{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;justify-content:center;
+  padding:0 16px 20px;pointer-events:none;opacity:0;transform:translateY(30px);transition:.4s}
+#storyOverlay.on{opacity:1;transform:none;pointer-events:auto}
+.story-card{position:relative;max-width:720px;width:100%;background:var(--panel-solid);border:1px solid var(--stroke-2);
+  border-radius:20px;padding:24px 28px 20px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+.story-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--stroke);background:rgba(255,255,255,.05);color:var(--ink);cursor:pointer;font-size:15px}
+.story-close:hover{border-color:var(--accent)}
+.story-chapter{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:800}
+.story-card h3{margin:6px 0 8px;font-size:clamp(20px,3vw,28px)}
+.story-card p{margin:0;color:var(--ink-dim);line-height:1.62;font-size:clamp(14px,1.7vw,16px)}
+.story-dots{display:flex;gap:7px;justify-content:center;margin:16px 0 14px;flex-wrap:wrap}
+.story-dots .sd{width:9px;height:9px;border-radius:50%;background:rgba(140,170,255,.28);cursor:pointer;transition:.2s}
+.story-dots .sd.on{background:var(--accent);box-shadow:var(--glow);transform:scale(1.3)}
+.story-ctrls{display:flex;gap:12px;justify-content:center;align-items:center}
+
+/* ---------------- light theme ---------------- */
+body.light{
+  --bg:#e9eff9; --bg-2:#d7e2f5; --ink:#132542; --ink-dim:#41567c; --ink-faint:#7387a8;
+  --panel:rgba(255,255,255,.74); --panel-solid:#ffffff; --stroke:rgba(30,60,120,.14); --stroke-2:rgba(30,60,120,.30);
+  --glow:0 0 22px rgba(40,120,220,.28); --shadow:0 20px 50px rgba(40,70,130,.18);
+}
+body.light #sky{opacity:.20}
+body.light #veil{background:radial-gradient(120% 90% at 50% -10%, transparent 35%, rgba(233,239,249,.72) 100%)}
+body.light header.nav{background:linear-gradient(180deg, rgba(255,255,255,.93), rgba(255,255,255,.55))}
+body.light h1.big{background:linear-gradient(120deg,#123a9e,#2f7bd8 45%,#0aa0b3 72%,#c0398f);-webkit-background-clip:text;background-clip:text;color:transparent}
+body.light .vital,body.light .scale-item,body.light .speed,body.light .scrubber .track{background-color:rgba(20,50,110,.05)}
+body.light .vital .vbar,body.light .card .bar,body.light .exrow .bar{background:rgba(20,50,110,.10)}
+body.light .quiz-opt kbd,body.light .keyhint kbd,body.light .lead kbd,body.light kbd.k{background:rgba(20,50,110,.08);color:#41567c}
+body.light .chip,body.light .jump button,body.light .filterbar button,body.light .scale-metrics button,
+body.light .quiz-opt,body.light .btn,body.light .ctrl,body.light .theme-btn,body.light .menu-btn,
+body.light .nav-tabs button:hover{background:rgba(20,50,110,.06)}
+body.light .btn.primary,body.light .ctrl.play,body.light .nav-tabs button.active{color:#062038;background:linear-gradient(120deg,var(--accent),#7ad0ff)}
+body.light .track .fill{background:rgba(0,0,0,.30)}
+body.light .grid-line{stroke:rgba(20,50,110,.09)}
+body.light .modal{background:rgba(200,214,236,.72)}
+body.light .agelabel input,body.light .scenario input[type=range]{background:rgba(20,50,110,.08)}
+body.light .era-badge,body.light .mya-tag,body.light .mya-tag small,body.light .vital .vv,
+body.light .quiz-top b,body.light .hero-stats .s b,body.light .readout .now b,body.light .snap-h{color:#132542}
+body.light .eyebrow,body.light .card .meta,body.light .story-chapter,body.light .snap-h span{color:#1f74c9}
+
+/* ---------------- size comparator ---------------- */
+.size-stage-wrap{margin-top:20px;border:1px solid var(--stroke);border-radius:16px;background:var(--panel);
+  overflow-x:auto;padding:24px 22px 16px}
+.size-stage{display:flex;align-items:flex-end;gap:30px;min-height:130px;width:max-content}
+.size-item{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:10px;justify-content:flex-end}
+.size-cre{display:flex;align-items:flex-end;justify-content:center}
+.size-cre:not(.size-h) svg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.42))}
+.size-cre.size-h{width:auto}
+.size-cre.size-h svg{height:100%;width:auto;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.42))}
+.size-label{font-size:12.5px;font-weight:700;text-align:center;color:var(--ink);white-space:nowrap}
+.size-label span{display:block;font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600;margin-top:2px}
+
+/* ---------------- search palette ---------------- */
+.search-modal{align-items:flex-start}
+.search-box{max-width:580px;padding:16px}
+.search-box .box,.search-modal .box{margin-top:11vh}
+#searchInput{width:100%;font:inherit;font-size:16px;padding:14px 16px;border-radius:12px;
+  border:1px solid var(--stroke-2);background:rgba(0,0,0,.25);color:var(--ink);outline:none}
+body.light #searchInput{background:rgba(20,50,110,.05)}
+#searchInput:focus{border-color:var(--accent);box-shadow:var(--glow)}
+.search-results{margin-top:10px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.sr{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer}
+.sr.on,.sr:hover{background:rgba(120,160,255,.15)}
+.sr-kind{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent);min-width:64px;flex:0 0 auto}
+.sr-l{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-sub{margin-left:auto;font-size:12px;color:var(--ink-faint);font-family:var(--mono);flex:0 0 auto;padding-left:8px}
+.sr-empty{padding:18px;text-align:center;color:var(--ink-faint)}
+.search-hint{margin-top:10px;font-size:11px;color:var(--ink-faint);text-align:center}
+.ctrl.on-ctrl{background:linear-gradient(120deg,var(--accent),#7ad0ff);color:#04101f;border:none}
+
+/* responsive */
+@media(max-width:880px){
+  .snapshot{grid-template-columns:1fr}
+  .quiz-options{grid-template-columns:1fr}
+  #searchBtn{margin-left:auto}
+  .stage{grid-template-columns:1fr}
+  .nav-tabs{display:none}
+  .nav-tabs.open{display:flex;position:absolute;top:100%;right:10px;left:10px;flex-direction:column;
+    background:var(--panel-solid);border:1px solid var(--stroke-2);border-radius:14px;padding:10px;box-shadow:var(--shadow)}
+  .nav-tabs.open button{text-align:left}
+  .menu-btn{display:grid;place-items:center;margin-left:auto;width:44px;height:44px;border-radius:12px;
+    border:1px solid var(--stroke-2);background:rgba(120,160,255,.10);color:var(--ink);cursor:pointer}
+  .evostep{grid-template-columns:1fr}
+  .jump{margin-left:0;width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.05ms !important}
+}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div id="veil"></div>
+
+<div class="wrap">
+<header class="nav">
+  <div class="brand"><span class="orb"></span><div>Chronosphere<small>Journey of Earth</small></div></div>
+  <nav class="nav-tabs" id="tabs">
+    <button data-view="hero" class="active">Home</button>
+    <button data-view="timeline">Timeline</button>
+    <button data-view="oceans">Oceans</button>
+    <button data-view="life">Life &amp; Biodiversity</button>
+    <button data-view="animals">Animals</button>
+    <button data-view="humans">Humans</button>
+    <button data-view="sizes">Sizes</button>
+    <button data-view="climate">Climate</button>
+    <button data-view="extinctions">Extinctions</button>
+    <button data-view="scale">Scale</button>
+    <button data-view="quiz">Quiz</button>
+  </nav>
+  <button class="theme-btn" id="searchBtn" aria-label="Search (press /)">🔍</button>
+  <button class="theme-btn" id="themeBtn" aria-label="Toggle light or dark theme">🌙</button>
+  <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="view-hero" class="view active" data-view="hero">
+  <div class="hero-inner">
+    <div class="hero-planet">
+      <div class="ring"></div>
+      <div class="globe"></div>
+      <div class="land"></div>
+      <div class="cloud"></div>
+    </div>
+    <p class="eyebrow">A 4,600,000,000 year story</p>
+    <h1 class="big">The Journey of Earth</h1>
+    <p class="lead" style="margin:0 auto">Travel from a cloud of cosmic dust to the blue world of today. Scrub through deep time, watch oceans fill, life ignite, continents wander, and creatures rise and fall — all in one living, interactive timeline.</p>
+    <div class="hero-cta">
+      <button class="btn primary" data-goto="timeline">▶ Begin the Journey</button>
+      <button class="btn" data-goto="animals">Explore Life</button>
+    </div>
+    <div class="hero-stats">
+      <div class="s"><b>4.6 B</b><span>Years of history</span></div>
+      <div class="s"><b>5</b><span>Mass extinctions</span></div>
+      <div class="s"><b>50+</b><span>Creatures to meet</span></div>
+      <div class="s"><b>4</b><span>Great eons</span></div>
+    </div>
+    <p class="scroll-hint">Use ← → keys · drag the timeline · tap anything</p>
+  </div>
+</section>
+
+<!-- ============ TIMELINE ============ -->
+<section id="view-timeline" class="view" data-view="timeline">
+  <p class="eyebrow">Interactive Deep-Time Explorer</p>
+  <h2 class="sec">Scrub through 4.6 billion years</h2>
+  <p class="lead">Drag the timeline, press play, or use arrow keys. The whole planet — its sky, seas and life — changes as you move.</p>
+  <div style="margin-top:16px"><button class="btn primary" id="btnStory">🎬 Play the Story of Earth</button></div>
+
+  <div class="stage">
+    <div class="panel stage-visual">
+      <div class="era-badge"><span class="dot" id="eraDot"></span><span id="eraName">Hadean</span></div>
+      <div class="scene" id="scene"><div class="emoji" id="sceneEmoji">🌌</div></div>
+      <div class="mya-tag"><span id="myaVal">4600</span><small>million years ago</small></div>
+    </div>
+
+    <div class="panel stage-info">
+      <div class="cat" id="evCat" style="color:var(--accent)">FORMATION</div>
+      <h3 id="evTitle">Birth of the Earth</h3>
+      <p id="evDesc">Loading the story of our world…</p>
+      <ul class="factlist" id="evFacts"></ul>
+      <div class="chips" id="evChips"></div>
+    </div>
+  </div>
+
+  <div class="panel snapshot">
+    <div class="snap-map">
+      <div class="snap-h">Continental Drift <span id="driftName">Modern world</span></div>
+      <svg class="drift" id="drift" viewBox="0 0 200 200" aria-label="World map at selected time"></svg>
+      <div class="snap-cap">A stylised view of how the land moved — watch supercontinents form and break apart.</div>
+    </div>
+    <div class="snap-vitals">
+      <div class="snap-h">Planetary Vitals <span>at this moment</span></div>
+      <div class="vitals" id="vitals"></div>
+      <div class="snap-cap">Approximate global values — how the whole planet's "body stats" changed through time.</div>
+    </div>
+  </div>
+
+  <div class="panel tl">
+    <div class="readout">
+      <div class="now">Era: <b id="roEra">Hadean</b> · <span id="roEon">Precambrian</span></div>
+      <div class="now"><span id="roEvent">—</span></div>
+    </div>
+    <div class="tl-eras" id="tlEras"></div>
+    <div class="scrubber" id="scrubber">
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="ticks" id="ticks"></div>
+      <div class="event-dots" id="eventDots"></div>
+      <div class="marker" id="marker"></div>
+      <div class="handle" id="handle"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl" id="btnPrev" title="Previous event (←)" aria-label="Previous">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20 9 12l10-8zM5 19V5"/></svg>
+      </button>
+      <button class="ctrl play" id="btnPlay" title="Play / Pause (Space)" aria-label="Play">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl" id="btnNext" title="Next event (→)" aria-label="Next">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 4 10 8-10 8zM19 5v14"/></svg>
+      </button>
+      <div class="speed" id="speed">
+        <button data-sp="0.5">0.5×</button>
+        <button data-sp="1" class="on">1×</button>
+        <button data-sp="2">2×</button>
+        <button data-sp="4">4×</button>
+      </div>
+      <button class="ctrl" id="btnSound" title="Toggle era soundscape" aria-label="Sound on/off">
+        <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/></svg>
+      </button>
+      <div class="jump" id="jump"></div>
+    </div>
+    <div class="share-row">
+      <button class="btn ghost" id="btnShare">🔗 Copy link to this moment</button>
+      <button class="btn ghost" id="btnPostcard">🖼️ Create a postcard</button>
+    </div>
+    <div class="keyhint">
+      <span><kbd>Space</kbd> play/pause</span>
+      <span><kbd>←</kbd><kbd>→</kbd> step events</span>
+      <span><kbd>Home</kbd> start · <kbd>End</kbd> today</span>
+      <span>Drag / tap the bar</span>
+    </div>
+  </div>
+
+  <div class="panel lineage-panel">
+    <div class="lineage-head">
+      <div>
+        <div class="cat" style="color:var(--accent)">YOUR DEEP ANCESTRY</div>
+        <h3 style="margin:4px 0 0;font-size:clamp(18px,2.4vw,26px)">The thread that leads to you</h3>
+      </div>
+      <button class="btn primary" id="btnTrace">🧬 Trace the thread to you</button>
+    </div>
+    <div class="lineage" id="lineage"></div>
+    <p id="lineageNote" style="color:var(--ink-dim);font-size:14px;line-height:1.6;margin:14px 0 0">
+      Every one of these ancestors survived long enough to pass life on. Tap any link — or press <em>Trace</em> to travel the whole chain from the first cell to you.</p>
+  </div>
+</section>
+
+<!-- ============ OCEANS ============ -->
+<section id="view-oceans" class="view" data-view="oceans">
+  <p class="eyebrow">The Blue Engine</p>
+  <h2 class="sec">Story of the Oceans</h2>
+  <p class="lead">Water shaped everything. From a scalding steam-world to the deep blue cradle of life, follow the oceans through time — then dive from the sunlit surface to the crushing dark of the abyss.</p>
+
+  <div class="grid g3" id="oceanTime"></div>
+
+  <h2 class="sec" style="margin-top:46px">Dive the modern ocean</h2>
+  <p class="lead">Every zone hosts life adapted to its light, pressure and cold. Tap a layer to explore.</p>
+  <div class="ocean" id="oceanDepth"></div>
+</section>
+
+<!-- ============ LIFE & BIODIVERSITY ============ -->
+<section id="view-life" class="view" data-view="life">
+  <p class="eyebrow">From One Cell to Millions of Species</p>
+  <h2 class="sec">The Rise of Life &amp; Biodiversity</h2>
+  <p class="lead">Life began as invisible chemistry and exploded into the dazzling web we know today. These are the great leaps — each one rebuilt what was possible on Earth.</p>
+  <div class="grid g3" id="lifeGrid"></div>
+
+  <h2 class="sec" style="margin-top:46px">The living kingdoms today</h2>
+  <div class="grid g4" id="kingdomGrid"></div>
+</section>
+
+<!-- ============ ANIMALS ============ -->
+<section id="view-animals" class="view" data-view="animals">
+  <p class="eyebrow">A Bestiary of Deep Time</p>
+  <h2 class="sec">Evolution of the Animals</h2>
+  <p class="lead">Meet the creatures that ruled each age — from the first twitching worms to the great reptiles and the giants of the ice. Filter by era and tap any animal to learn its story.</p>
+  <div class="filterbar" id="animalFilters"></div>
+  <div class="grid g4" id="animalGrid"></div>
+</section>
+
+<!-- ============ HUMANS ============ -->
+<section id="view-humans" class="view" data-view="humans">
+  <p class="eyebrow">The Newest Chapter</p>
+  <h2 class="sec">Human Evolution</h2>
+  <p class="lead">In the last blink of Earth's story, one branch of apes learned to walk, make fire, speak, farm and dream. Here is that 7-million-year road.</p>
+  <div class="evopath" id="humanPath"></div>
+</section>
+
+<!-- ============ EXTINCTIONS ============ -->
+<section id="view-extinctions" class="view" data-view="extinctions">
+  <p class="eyebrow">Great Resets</p>
+  <h2 class="sec">The Five Mass Extinctions</h2>
+  <p class="lead">Five times, life on Earth nearly ended — and five times it rebuilt itself into something new. Each bar shows the share of species lost.</p>
+  <div class="exwrap" id="exWrap"></div>
+  <div class="panel" style="margin-top:26px">
+    <h3 style="margin:0 0 6px">The sixth? A chapter we are writing.</h3>
+    <p style="color:var(--ink-dim);line-height:1.65;margin:0">Many scientists warn that human activity — habitat loss, climate change and pollution — is driving extinction rates far above the natural background. Unlike the first five, this one has a cause that can choose differently. Understanding the past four billion years is the first step toward writing a better next page.</p>
+  </div>
+</section>
+
+<!-- ============ SIZES ============ -->
+<section id="view-sizes" class="view" data-view="sizes">
+  <p class="eyebrow">To Scale</p>
+  <h2 class="sec">📏 How Big Were They?</h2>
+  <p class="lead">Numbers like "18 metres" are hard to picture — so here they are, drawn to scale beside a human. Tap the creatures below to add or remove them, then scroll the stage sideways to take in the giants.</p>
+  <div class="filterbar" id="sizePicker"></div>
+  <div class="size-stage-wrap"><div class="size-stage" id="sizeStage"></div></div>
+  <p class="chart-note" id="sizeNote">Each silhouette is scaled by its real length; the human is 1.8 m tall for reference. Sizes are typical maxima, approximate.</p>
+</section>
+
+<!-- ============ QUIZ ============ -->
+<section id="view-quiz" class="view" data-view="quiz">
+  <p class="eyebrow">Test Your Deep-Time Instincts</p>
+  <h2 class="sec">🕵️ Time Detective</h2>
+  <p class="lead">A creature emerges from the mists of time. Can you place it in the right era? Ten clues, one detective — you. Tap an answer, click, or press keys <kbd class="k">1</kbd>–<kbd class="k">4</kbd>.</p>
+  <div class="panel quiz" id="quizPanel">
+    <div class="quiz-top">
+      <div class="quiz-progress">Clue <b id="qNum">1</b> / <span id="qTotal">10</span></div>
+      <div class="quiz-score">Score <b id="qScore">0</b> &nbsp;·&nbsp; 🔥 streak <b id="qStreak">0</b></div>
+    </div>
+    <div class="quiz-stage" id="quizStage"></div>
+    <div class="quiz-q" id="quizQ"></div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+  </div>
+  <div class="panel quiz-result" id="quizResult" style="display:none"></div>
+</section>
+
+<!-- ============ CLIMATE ============ -->
+<section id="view-climate" class="view" data-view="climate">
+  <p class="eyebrow">A Planet That Runs Hot &amp; Cold</p>
+  <h2 class="sec">Climate Through Time</h2>
+  <p class="lead">Earth has swung between scorching greenhouse ages and frozen "snowball" worlds. But look closely at the very end of the story — the change we are causing now is unlike anything in the record for its <em>speed</em>.</p>
+
+  <div class="panel" style="margin-top:24px">
+    <div class="chart-head">
+      <h3>Deep-time climate — the last 500 million years</h3>
+      <div class="legend"><span class="lg"><i style="background:#ff6b4a"></i>Global temperature</span><span class="lg"><i style="background:#ffbf47"></i>CO₂ (log scale)</span></div>
+    </div>
+    <div class="chart-wrap"><svg id="chartDeep" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <p class="chart-note">Warm "greenhouse" spells (like the age of dinosaurs) alternate with cold "icehouse" spells (like the ice ages we just left). Values are approximate.</p>
+  </div>
+
+  <div class="panel" style="margin-top:24px">
+    <div class="chart-head">
+      <h3>The modern spike — the last 170 years</h3>
+      <div class="legend"><span class="lg"><i style="background:#ff6b4a"></i>Temperature anomaly</span><span class="lg"><i style="background:#ffbf47"></i>CO₂ (ppm)</span></div>
+    </div>
+    <div class="chart-wrap"><svg id="chartModern" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <p class="chart-note">Since the Industrial Revolution, CO₂ has risen from ~280 to over 420 ppm and average temperatures ~1.2 °C — a jump that natural cycles took thousands of years to make. This is the "hockey stick".</p>
+  </div>
+
+  <div class="panel" style="margin-top:24px">
+    <h3 style="margin:0 0 10px">Where do we go from here?</h3>
+    <p style="color:var(--ink-dim);margin:0 0 16px;line-height:1.6">Our choices this century decide the ending. Drag to explore how much warming different paths could bring by 2100.</p>
+    <div class="scenario">
+      <input type="range" id="scenario" min="0" max="3" step="1" value="1" aria-label="Emissions scenario">
+      <div class="scenario-out">
+        <div class="scenario-temp" id="scTemp">+1.8 °C</div>
+        <div class="scenario-name" id="scName">Strong action</div>
+        <div class="scenario-desc" id="scDesc">Rapid cuts to emissions keep warming close to the Paris goals.</div>
+      </div>
+    </div>
+    <p class="chart-note" style="margin-top:16px">Illustrative ranges based on published climate-scenario families. The past can't be changed — but this part of the story is still being written.</p>
+  </div>
+</section>
+
+<!-- ============ SCALE / COSMIC CALENDAR ============ -->
+<section id="view-scale" class="view" data-view="scale">
+  <p class="eyebrow">Feel the Immensity</p>
+  <h2 class="sec">The Scale of Deep Time</h2>
+  <p class="lead">4.6 billion years is impossible to picture. So let's shrink it. Choose a scale below and see just how astonishingly late in the story everything you know appears.</p>
+
+  <div class="scale-metrics" id="scaleMetrics"></div>
+  <div id="ageWrap" style="display:none;margin-top:14px">
+    <label class="agelabel">Your age: <input type="number" id="ageInput" min="1" max="120" value="25"> years</label>
+  </div>
+
+  <div class="panel" style="margin-top:22px">
+    <div class="scale-headline" id="scaleHeadline"></div>
+    <div class="scale-bar" id="scaleBar"></div>
+    <div class="scale-list" id="scaleList"></div>
+  </div>
+</section>
+
+<footer>
+  <p><strong>Chronosphere</strong> — an interactive journey through the history of Earth.<br>
+  Built as a single self-contained page · works with touch, mouse &amp; keyboard.<br>
+  <span style="color:var(--ink-faint)">Dates and figures are approximate scientific consensus values, rounded for clarity and learning.</span></p>
+</footer>
+</div>
+
+<!-- modal -->
+<div class="modal" id="modal" aria-modal="true" role="dialog">
+  <div class="box">
+    <button class="close" id="modalClose" aria-label="Close">✕</button>
+    <span class="big-e" id="mE">🦖</span>
+    <h3 id="mT">Title</h3>
+    <div class="sub" id="mS">subtitle</div>
+    <p id="mP">desc</p>
+    <div id="mKV"></div>
+  </div>
+</div>
+
+<div class="modal" id="pcModal" aria-modal="true" role="dialog">
+  <div class="box pc-box">
+    <button class="close" id="pcClose" aria-label="Close">✕</button>
+    <h3 style="text-align:center;margin:0 0 4px">Your Deep-Time Postcard</h3>
+    <div class="sub" style="text-align:center;color:var(--accent);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:14px">A snapshot of this moment in Earth's story</div>
+    <canvas id="pcCanvas" width="1000" height="560"></canvas>
+    <div class="pc-actions">
+      <a id="pcDownload" class="btn primary" download="chronosphere-postcard.png" href="#">⬇ Download image</a>
+      <button class="btn" id="pcCopyLink">🔗 Copy link to this moment</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal search-modal" id="searchModal" aria-modal="true" role="dialog">
+  <div class="box search-box">
+    <input id="searchInput" type="text" placeholder="Search eras, events, creatures, sections…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-hint"><kbd class="k">↑</kbd><kbd class="k">↓</kbd> move · <kbd class="k">↵</kbd> go · <kbd class="k">esc</kbd> close</div>
+  </div>
+</div>
+
+<div id="storyOverlay" aria-live="polite">
+  <div class="story-card">
+    <button class="story-close" id="storyExit" aria-label="Exit story">✕</button>
+    <div class="story-chapter" id="storyChapter">Chapter 1</div>
+    <h3 id="storyTitle">…</h3>
+    <p id="storyText">…</p>
+    <div class="story-dots" id="storyDots"></div>
+    <div class="story-ctrls">
+      <button class="ctrl" id="storyPrev" aria-label="Previous chapter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20 9 12l10-8zM5 19V5"/></svg></button>
+      <button class="ctrl play" id="storyPlay" aria-label="Play/pause">
+        <svg id="storyPlayIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+      <button class="ctrl" id="storyNext" aria-label="Next chapter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 4 10 8-10 8zM19 5v14"/></svg></button>
+      <button class="ctrl" id="storyNarrate" title="Read the story aloud" aria-label="Toggle narration">
+        <svg id="storyNarrateIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+
+// Eras with color + time span (in millions of years ago)
+const ERAS = [
+  {key:'hadean',    name:'Hadean',      eon:'Precambrian', from:4600, to:4000, color:'#8e44ad'},
+  {key:'archean',   name:'Archean',     eon:'Precambrian', from:4000, to:2500, color:'#c0392b'},
+  {key:'proterozoic',name:'Proterozoic',eon:'Precambrian', from:2500, to:541,  color:'#d35400'},
+  {key:'paleozoic', name:'Paleozoic',   eon:'Phanerozoic', from:541,  to:252,  color:'#27ae60'},
+  {key:'mesozoic',  name:'Mesozoic',    eon:'Phanerozoic', from:252,  to:66,   color:'#2980b9'},
+  {key:'cenozoic',  name:'Cenozoic',    eon:'Phanerozoic', from:66,   to:0,    color:'#16a5a5'},
+];
+const T_START = 4600, T_END = 0;
+
+function eraAt(mya){
+  for(const e of ERAS){ if(mya <= e.from && mya > e.to) return e; }
+  return mya<=0.001 ? ERAS[ERAS.length-1] : ERAS[0];
+}
+
+// Timeline events (mya). category drives color accents. emoji + optional sub-emojis for scene.
+const EVENTS = [
+  {mya:4600, cat:'formation', title:'Birth of the Earth', emoji:'🌌', sub:['✨','☄️'],
+   desc:'Earth accretes from dust and rock orbiting the young Sun. It is a glowing ball of molten rock, bombarded relentlessly by asteroids and comets.',
+   facts:['Formed from the solar nebula in ~10–20 million years','Surface a global ocean of magma','No atmosphere we could breathe'],
+   chips:['Solar nebula','Accretion','Molten world']},
+  {mya:4510, cat:'formation', title:'The Giant Impact & the Moon', emoji:'🌘', sub:['💥','🌑'],
+   desc:'A Mars-sized world named Theia slams into the young Earth. The debris flung into orbit coalesces into the Moon, and Earth is left spinning fast and tilted.',
+   facts:['The Moon formed from ejected debris','Gave Earth its axial tilt (our seasons)','Days were only ~5–6 hours long'],
+   chips:['Theia','Moon formation','Axial tilt']},
+  {mya:4400, cat:'ocean', title:'First Oceans Condense', emoji:'🌊', sub:['💧','☁️'],
+   desc:'As the surface cools, water vapour from volcanoes and comets condenses into the first liquid oceans, wrapping the planet in a warm, steamy sea.',
+   facts:['Oldest crystals (zircons) date liquid water to here','Atmosphere thick with CO₂, nitrogen and steam','Sets the stage for chemistry of life'],
+   chips:['Liquid water','Early atmosphere','Steam world']},
+  {mya:4000, cat:'life', title:'First Life — Microbes', emoji:'🦠', sub:['🧬','💧'],
+   desc:'In warm waters, perhaps around deep-sea vents, simple single-celled life appears. These microbes are the ancestors of everything alive today.',
+   facts:['Earliest chemical traces of life','Prokaryotes: cells without a nucleus','Life begins almost as soon as Earth cools'],
+   chips:['Abiogenesis','Prokaryotes','Hydrothermal vents']},
+  {mya:3500, cat:'life', title:'Stromatolites & Photosynthesis', emoji:'🪨', sub:['🦠','☀️'],
+   desc:'Colonies of cyanobacteria build layered mounds called stromatolites and begin harnessing sunlight — the first photosynthesis quietly starts changing the world.',
+   facts:['Cyanobacteria capture the Sun’s energy','Stromatolites are the oldest fossils','A slow build-up of oxygen begins'],
+   chips:['Cyanobacteria','Stromatolites','Photosynthesis']},
+  {mya:2400, cat:'atmosphere', title:'The Great Oxidation Event', emoji:'💨', sub:['🫧','🌫️'],
+   desc:'Oxygen produced by microbes floods the atmosphere. It rusts the oceans and poisons much early life — but sets the stage for complex organisms.',
+   facts:['Oxygen becomes a major gas','Triggered a possible “Snowball Earth”','One of the biggest changes in Earth history'],
+   chips:['Oxygen','Snowball Earth','Banded iron']},
+  {mya:2100, cat:'life', title:'Complex Cells (Eukaryotes)', emoji:'🧫', sub:['🧬','⚡'],
+   desc:'One cell swallows another and keeps it — the origin of the powerhouse mitochondria. Cells with a nucleus and organelles, eukaryotes, are born.',
+   facts:['Endosymbiosis: cells living inside cells','Ancestors of all plants, animals & fungi','Enabled far larger, complex life'],
+   chips:['Eukaryotes','Mitochondria','Endosymbiosis']},
+  {mya:1200, cat:'life', title:'Sexual Reproduction & Multicellular Life', emoji:'🌿', sub:['🧬','🔴'],
+   desc:'Life learns teamwork. The first multicellular organisms and sexual reproduction appear, wildly accelerating the pace of evolution.',
+   facts:['Genetic mixing speeds up evolution','First simple multicellular algae','Diversity begins to climb'],
+   chips:['Multicellularity','Sex','Red & green algae']},
+  {mya:600, cat:'life', title:'The Ediacaran Garden', emoji:'🪸', sub:['🌱','🌊'],
+   desc:'The first large, soft-bodied animals appear on the sea floor — strange fronds, discs and quilted creatures unlike anything alive today.',
+   facts:['First large complex animals','Soft-bodied, no shells or bones','A peaceful world before predators'],
+   chips:['Ediacaran biota','Soft-bodied','Sea floor']},
+  {mya:541, cat:'animals', title:'The Cambrian Explosion', emoji:'🦐', sub:['🐛','🦑','👁️'],
+   desc:'In a geological instant, almost every major animal body plan appears. Eyes, shells, legs and predators arrive — the oceans erupt with life.',
+   facts:['Most animal phyla appear rapidly','Trilobites & Anomalocaris rule the seas','Eyes and hard shells evolve'],
+   chips:['Cambrian','Trilobites','Body plans']},
+  {mya:485, cat:'animals', title:'First Fish & Vertebrates', emoji:'🐟', sub:['🌊','🦴'],
+   desc:'Jawless fish glide through Ordovician seas — the first animals with backbones. Life on the sea floor grows richer than ever.',
+   facts:['First true vertebrates','Jawless, armoured fish','Great Ordovician biodiversity boom'],
+   chips:['Vertebrates','Jawless fish','Ordovician']},
+  {mya:430, cat:'life', title:'Plants Colonise the Land', emoji:'🌱', sub:['🍃','🏞️'],
+   desc:'The first small mosses and liverworts creep onto bare rock, followed by the earliest vascular plants. Green begins to spread across the continents.',
+   facts:['Land was barren before this','First mosses, then rooted plants','Soils and terrestrial ecosystems begin'],
+   chips:['Land plants','Silurian','Greening Earth']},
+  {mya:400, cat:'animals', title:'Arthropods & Life Leaves Water', emoji:'🦂', sub:['🕷️','🌿'],
+   desc:'Millipedes, early insects and scorpion-like creatures become the first animals to breathe air and live on land, following the plants ashore.',
+   facts:['First land animals: arthropods','Air-breathing evolves','Insects begin their reign'],
+   chips:['Arthropods','Devonian','Terrestrial life']},
+  {mya:375, cat:'animals', title:'Fish Crawl Ashore (Tetrapods)', emoji:'🐸', sub:['🐟','🦴'],
+   desc:'Lobe-finned fish like Tiktaalik develop limb-like fins and gulp air, giving rise to tetrapods — the four-limbed ancestors of all land vertebrates.',
+   facts:['Fins become limbs','Tiktaalik: the “fishapod”','Ancestor of amphibians, reptiles, us'],
+   chips:['Tetrapods','Tiktaalik','Limbs from fins']},
+  {mya:359, cat:'life', title:'Coal Forests & Giant Insects', emoji:'🌳', sub:['🦋','🐛'],
+   desc:'Vast swampy forests of tree-sized ferns blanket the land. Oxygen soars, letting insects grow huge — dragonflies with hawk-sized wingspans patrol the air.',
+   facts:['Carboniferous coal swamps form','Oxygen ~35% of the air','Meganeura: 70cm wingspan dragonfly'],
+   chips:['Carboniferous','Coal forests','Giant insects']},
+  {mya:320, cat:'animals', title:'The First Reptiles', emoji:'🦎', sub:['🥚','🌿'],
+   desc:'The amniotic egg — a private pond in a shell — frees vertebrates from water for good. Reptiles spread across dry land far from the coast.',
+   facts:['Amniotic egg breaks the water tie','Reptiles conquer the interior','Synapsids (our ancestors) also appear'],
+   chips:['Amniotes','Reptiles','Shelled eggs']},
+  {mya:299, cat:'animals', title:'Age of the Sail-Backs', emoji:'🦕', sub:['☀️','🏜️'],
+   desc:'Before the dinosaurs, the Permian belongs to synapsids like Dimetrodon — sail-backed hunters. These “mammal-like reptiles” are our distant kin.',
+   facts:['Dimetrodon rules the Permian','Synapsids → eventually mammals','Pangaea supercontinent assembles'],
+   chips:['Permian','Dimetrodon','Pangaea']},
+  {mya:252, cat:'extinction', title:'The Great Dying', emoji:'🌋', sub:['💀','🔥'],
+   desc:'The largest mass extinction ever. Colossal volcanic eruptions in Siberia wipe out around 90% of all species. Life comes within a whisker of ending.',
+   facts:['~90–96% of species lost','Caused by Siberian volcanism','Reset the course of evolution'],
+   chips:['Permian extinction','Siberian Traps','The Great Dying']},
+  {mya:230, cat:'animals', title:'Dawn of the Dinosaurs', emoji:'🦕', sub:['🌿','🦖'],
+   desc:'From the survivors, a new group rises: the dinosaurs. Small and swift at first, they begin a 165-million-year dynasty across a recovering world.',
+   facts:['First dinosaurs appear (Triassic)','Also: first mammals, tiny & shrew-like','Pterosaurs take to the skies'],
+   chips:['Triassic','First dinosaurs','First mammals']},
+  {mya:201, cat:'extinction', title:'End-Triassic Extinction', emoji:'☄️', sub:['🌋','💀'],
+   desc:'Another extinction clears many big competitors as Pangaea rifts apart. Dinosaurs seize the opening and grow into the dominant land animals.',
+   facts:['Cleared the way for dinosaurs','Linked to volcanism & CO₂','Pangaea begins to break up'],
+   chips:['Triassic-Jurassic','Rifting','Dino takeover']},
+  {mya:180, cat:'animals', title:'Jurassic Giants', emoji:'🦕', sub:['🌿','🦴'],
+   desc:'The Jurassic is the age of giants. Long-necked sauropods like Brachiosaurus browse treetops while Allosaurus and Stegosaurus roam lush fern plains.',
+   facts:['Sauropods: largest land animals ever','Allosaurus is the apex predator','First birds evolve from dinosaurs'],
+   chips:['Jurassic','Sauropods','Archaeopteryx']},
+  {mya:150, cat:'animals', title:'First Birds Take Flight', emoji:'🪶', sub:['🦖','🌌'],
+   desc:'Archaeopteryx — half dinosaur, half bird — flaps through Jurassic skies. Feathers, first evolved for warmth and display, are repurposed for flight.',
+   facts:['Archaeopteryx: the first bird','Birds ARE living dinosaurs','Feathers predate flight'],
+   chips:['Archaeopteryx','Feathers','Dinosaur flight']},
+  {mya:100, cat:'animals', title:'Cretaceous World & Flowers', emoji:'🌸', sub:['🦖','🐝'],
+   desc:'Flowering plants burst onto the scene and co-evolve with insects and pollinators. Tyrannosaurus and Triceratops appear later in this vibrant world.',
+   facts:['Flowering plants (angiosperms) explode','Bees & pollinators diversify','T. rex and Triceratops arrive'],
+   chips:['Cretaceous','Flowers','Pollinators']},
+  {mya:66, cat:'extinction', title:'The Day the Dinosaurs Died', emoji:'☄️', sub:['🦖','🔥'],
+   desc:'A 10-km asteroid strikes Chicxulub, Mexico. Firestorms, tsunamis and a global “winter” wipe out the non-bird dinosaurs and 75% of species.',
+   facts:['Asteroid impact at Chicxulub','~75% of species vanish','Ended the age of dinosaurs'],
+   chips:['K-Pg extinction','Chicxulub','Impact winter']},
+  {mya:60, cat:'animals', title:'The Age of Mammals Begins', emoji:'🦣', sub:['🌳','🐾'],
+   desc:'With the giant reptiles gone, mammals radiate into every niche — growing larger, smarter and more varied. Early primates take to the trees.',
+   facts:['Mammals fill empty niches','First primates in the treetops','Whales’ ancestors return to the sea'],
+   chips:['Paleogene','Mammal radiation','First primates']},
+  {mya:34, cat:'ocean', title:'Whales Rule the Seas', emoji:'🐋', sub:['🌊','🐬'],
+   desc:'Land mammals that returned to the water become fully aquatic whales. The oceans gain their largest-ever inhabitants as the world slowly cools.',
+   facts:['Whales become fully aquatic','Antarctica freezes over','Grasslands begin to spread'],
+   chips:['Whales','Cooling world','Grasslands']},
+  {mya:20, cat:'life', title:'Grasslands & Grazers', emoji:'🌾', sub:['🦓','🐎'],
+   desc:'Grasses spread across drying continents. Herds of grazing mammals — horses, antelope, elephants — evolve alongside the great cats that hunt them.',
+   facts:['Open grasslands expand','Horses & elephants diversify','Apes flourish in shrinking forests'],
+   chips:['Miocene','Grazers','Great apes']},
+  {mya:7, cat:'human', title:'The First Hominins', emoji:'🦍', sub:['🌳','🚶'],
+   desc:'In Africa, an ape lineage begins to walk upright. Sahelanthropus and later Australopithecus (like “Lucy”) take the first steps of the human story.',
+   facts:['Upright walking (bipedalism)','Sahelanthropus ~7 mya','“Lucy” (Australopithecus) ~3.2 mya'],
+   chips:['Hominins','Bipedalism','Africa']},
+  {mya:2.5, cat:'human', title:'Stone Tools & the Genus Homo', emoji:'🪨', sub:['🔨','🧠'],
+   desc:'Homo habilis, the “handy human”, chips the first stone tools. Brains begin to grow as our ancestors become clever, cooperative toolmakers.',
+   facts:['First stone tools (Oldowan)','Homo habilis appears','Brains start to enlarge'],
+   chips:['Homo habilis','Stone tools','Bigger brains']},
+  {mya:1.5, cat:'human', title:'Fire & the Wanderers', emoji:'🔥', sub:['🚶','🌍'],
+   desc:'Homo erectus masters fire and walks out of Africa across Asia and Europe — the first human to truly explore the wider world.',
+   facts:['Homo erectus tames fire','First to leave Africa','Cooking fuels brain growth'],
+   chips:['Homo erectus','Fire','Out of Africa']},
+  {mya:0.3, cat:'human', title:'Homo sapiens Emerge', emoji:'🧑🏽', sub:['🎨','🗣️'],
+   desc:'Modern humans arise in Africa ~300,000 years ago. Neanderthals thrive in Ice Age Europe. Art, language and symbolic thought take hold.',
+   facts:['Homo sapiens ~300,000 years ago','Neanderthals & Denisovans coexist','Cave art, language, jewellery'],
+   chips:['Homo sapiens','Neanderthals','Culture']},
+  {mya:0.012, cat:'human', title:'Farming & Civilisation', emoji:'🏛️', sub:['🌾','🏺'],
+   desc:'The last Ice Age ends. Humans invent agriculture, settle into villages, build cities, writing and empires — the whole of recorded history in a heartbeat of Earth time.',
+   facts:['Agriculture begins ~12,000 years ago','Cities, writing, metals','Population explodes'],
+   chips:['Neolithic','Agriculture','Civilisation']},
+  {mya:0, cat:'human', title:'Today — The Blue Planet', emoji:'🌍', sub:['🛰️','🌐'],
+   desc:'8 billion humans share a single connected world. We reshape the land, reach into space, and — for the first time — hold the power to protect or damage the whole biosphere.',
+   facts:['~8 billion people','A globally connected civilisation','The first species aware of deep time'],
+   chips:['Anthropocene','Global society','Stewardship']},
+];
+
+// Ocean-through-time cards
+const OCEAN_TIME = [
+  {e:'🔥', t:'A World of Steam', when:'4.4 billion yrs ago', c:'#c0392b',
+   d:'The first oceans boiled and steamed under a bombarded sky. Acidic, hot and iron-rich — but liquid water at last.'},
+  {e:'🦠', t:'The Living Broth', when:'3.5 billion yrs ago', c:'#8e44ad',
+   d:'Oceans become a microbial soup. Cyanobacteria pump the first oxygen into the water, slowly transforming its chemistry.'},
+  {e:'🧊', t:'Snowball Oceans', when:'700 million yrs ago', c:'#2980b9',
+   d:'Earth freezes over — glaciers may have reached the equator. Life clings on in cracks and vents beneath kilometres of ice.'},
+  {e:'🦑', t:'The Cambrian Seas', when:'540 million yrs ago', c:'#16a5a5',
+   d:'Oceans burst with the first complex animals — trilobites, giant Anomalocaris and armoured predators with the first eyes.'},
+  {e:'🦈', t:'Reign of Sea Monsters', when:'150 million yrs ago', c:'#2c7fb8',
+   d:'Marine reptiles — ichthyosaurs, plesiosaurs and later mosasaurs — dominate Mesozoic oceans alongside ammonites and sharks.'},
+  {e:'🐋', t:'Oceans of the Giants', when:'Today', c:'#16a5a5',
+   d:'The blue whale, largest animal ever to live, cruises modern seas — a living cathedral in an ocean full of coral, fish and life.'},
+];
+
+// Ocean depth zones (surface → abyss)
+const OCEAN_DEPTH = [
+  {name:'Sunlight Zone', depth:'0 – 200 m', bg:'#2aa9e0', fauna:'🐠🐬🐢🦈',
+   d:'Warm and bright, where photosynthesis powers nearly all ocean life. Home to coral reefs, dolphins, tuna and turtles.'},
+  {name:'Twilight Zone', depth:'200 – 1,000 m', bg:'#1c6fb0', fauna:'🦑🐟🪼',
+   d:'Faint blue light fades to black. Fish here migrate up at night; many make their own light (bioluminescence).'},
+  {name:'Midnight Zone', depth:'1,000 – 4,000 m', bg:'#123a72', fauna:'🐙🦐🎣',
+   d:'Total darkness, near-freezing cold, immense pressure. Anglerfish lure prey with glowing bait in the eternal night.'},
+  {name:'The Abyss', depth:'4,000 – 6,000 m', bg:'#0a2350', fauna:'🦀🪸🐚',
+   d:'A vast, cold plain of mud. Life is sparse but strange, feeding on the slow rain of matter from far above.'},
+  {name:'The Trenches (Hadal)', depth:'6,000 – 11,000 m', bg:'#050f2e', fauna:'🦠🐌',
+   d:'Deeper than Everest is tall. Only the most specialised creatures survive the crushing dark — yet even here, life persists.'},
+];
+
+// Life milestones (biodiversity)
+const LIFE = [
+  {e:'🦠', m:'~4.0 Ga', t:'First Life', d:'Single cells arise in the early oceans — the shared ancestor of everything alive.', c:'#8e44ad', bar:5},
+  {e:'☀️', m:'~3.5 Ga', t:'Photosynthesis', d:'Microbes learn to eat sunlight, eventually filling the air with oxygen.', c:'#e08e2a', bar:12},
+  {e:'🧫', m:'~2.1 Ga', t:'Complex Cells', d:'Eukaryotes — cells with a nucleus — make big, intricate life possible.', c:'#c0392b', bar:22},
+  {e:'🪸', m:'~600 Ma', t:'First Animals', d:'Soft-bodied Ediacaran creatures are the first large multicellular animals.', c:'#d35400', bar:38},
+  {e:'🦐', m:'~541 Ma', t:'Cambrian Explosion', d:'Nearly all animal body plans appear in a burst of evolutionary creativity.', c:'#27ae60', bar:58},
+  {e:'🌱', m:'~430 Ma', t:'Life on Land', d:'Plants, then animals, colonise the continents and build ecosystems.', c:'#2ecc71', bar:70},
+  {e:'🌸', m:'~130 Ma', t:'Flowering Plants', d:'Flowers and pollinators co-evolve, driving an explosion of diversity.', c:'#e84393', bar:85},
+  {e:'🌍', m:'Today', t:'~8.7 Million Species', d:'From bacteria to blue whales — the richest known biodiversity in the universe.', c:'#16a5a5', bar:100},
+];
+
+const KINGDOMS = [
+  {e:'🦁', t:'Animals', d:'~1.5 million known species, from insects to whales.', c:'#e17055'},
+  {e:'🌳', t:'Plants', d:'~390,000 species turning sunlight into life.', c:'#27ae60'},
+  {e:'🍄', t:'Fungi', d:'Nature’s recyclers — from yeast to vast underground networks.', c:'#a29bfe'},
+  {e:'🦠', t:'Bacteria', d:'The invisible majority; found everywhere on Earth.', c:'#0984e3'},
+  {e:'🧫', t:'Protists', d:'A diverse grab-bag of mostly single-celled eukaryotes.', c:'#00cec9'},
+  {e:'🌋', t:'Archaea', d:'Ancient microbes thriving in Earth’s most extreme places.', c:'#fdcb6e'},
+];
+
+// Animals bestiary — many species across eras
+const ANIMALS = [
+  {e:'🐛', n:'Trilobite', era:'paleozoic', when:'521 Ma', diet:'Scavenger', size:'1–70 cm',
+   d:'One of the first great success stories — armoured sea-floor arthropods with complex compound eyes. They thrived for 270 million years.'},
+  {e:'🦐', n:'Anomalocaris', era:'paleozoic', when:'520 Ma', diet:'Apex predator', size:'Up to 1 m',
+   d:'The first great predator of the seas. It swept prey into a circular, tooth-lined mouth with two grasping appendages.'},
+  {e:'🐚', n:'Ammonite', era:'paleozoic', when:'400 Ma', diet:'Predator', size:'1 cm – 2 m',
+   d:'Spiral-shelled relatives of squid that filled the oceans for hundreds of millions of years before vanishing with the dinosaurs.'},
+  {e:'🦂', n:'Sea Scorpion', era:'paleozoic', when:'460 Ma', diet:'Apex predator', size:'Up to 2.5 m',
+   d:'Eurypterids — giant aquatic scorpion-like hunters, among the largest arthropods that ever lived.'},
+  {e:'🐟', n:'Dunkleosteus', era:'paleozoic', when:'360 Ma', diet:'Apex predator', size:'Up to 6 m',
+   d:'A monstrous armoured fish with self-sharpening bony blades instead of teeth and one of the strongest bites of its age.'},
+  {e:'🐸', n:'Tiktaalik', era:'paleozoic', when:'375 Ma', diet:'Predator', size:'~2.5 m',
+   d:'The famous “fishapod” — a fish with a neck, ribs and limb-like fins, capturing the moment life crept from water to land.'},
+  {e:'🦎', n:'Dimetrodon', era:'paleozoic', when:'290 Ma', diet:'Apex predator', size:'Up to 4.6 m',
+   d:'The iconic sail-backed hunter. Not a dinosaur but a synapsid — closer to our own mammal ancestry than to reptiles.'},
+  {e:'🦗', n:'Meganeura', era:'paleozoic', when:'300 Ma', diet:'Insectivore', size:'70 cm wingspan',
+   d:'A dragonfly the size of a hawk, made possible by the oxygen-rich air of the Carboniferous coal forests.'},
+  {e:'🦖', n:'Coelophysis', era:'mesozoic', when:'215 Ma', diet:'Carnivore', size:'~3 m',
+   d:'A slender, fast early dinosaur that hunted in packs at the dawn of the dinosaur age.'},
+  {e:'🦕', n:'Plateosaurus', era:'mesozoic', when:'214 Ma', diet:'Herbivore', size:'Up to 10 m',
+   d:'One of the first big plant-eaters — an early cousin of the giant long-necked sauropods to come.'},
+  {e:'🦕', n:'Brachiosaurus', era:'mesozoic', when:'154 Ma', diet:'Herbivore', size:'Up to 22 m',
+   d:'A skyscraper of an animal that browsed treetops, holding its head far above the Jurassic plains.'},
+  {e:'🦕', n:'Diplodocus', era:'mesozoic', when:'152 Ma', diet:'Herbivore', size:'Up to 27 m',
+   d:'One of the longest dinosaurs — a living suspension bridge with a whip-like tail for defence.'},
+  {e:'🦖', n:'Allosaurus', era:'mesozoic', when:'150 Ma', diet:'Apex predator', size:'~9 m',
+   d:'The top predator of the Jurassic, with bladed teeth and powerful arms for gripping struggling prey.'},
+  {e:'🦴', n:'Stegosaurus', era:'mesozoic', when:'150 Ma', diet:'Herbivore', size:'~9 m',
+   d:'Famous for the plates along its back and a spiked tail (the “thagomizer”) for fending off predators.'},
+  {e:'🪶', n:'Archaeopteryx', era:'mesozoic', when:'150 Ma', diet:'Carnivore', size:'~0.5 m',
+   d:'The first bird — feathered, winged, yet with teeth and a bony tail. Living proof birds descend from dinosaurs.'},
+  {e:'🐊', n:'Spinosaurus', era:'mesozoic', when:'99 Ma', diet:'Apex predator', size:'Up to 15 m',
+   d:'The largest known predatory dinosaur — a semi-aquatic, sail-backed fisher longer than a T. rex.'},
+  {e:'🦖', n:'Tyrannosaurus rex', era:'mesozoic', when:'68 Ma', diet:'Apex predator', size:'~12 m',
+   d:'The tyrant lizard king — bone-crushing bite, keen senses and the most famous predator ever to walk the Earth.'},
+  {e:'🦕', n:'Triceratops', era:'mesozoic', when:'68 Ma', diet:'Herbivore', size:'~9 m',
+   d:'A three-horned, frilled tank of a dinosaur that shared its world — and its predators — with T. rex.'},
+  {e:'🛡️', n:'Ankylosaurus', era:'mesozoic', when:'67 Ma', diet:'Herbivore', size:'~8 m',
+   d:'An armoured living fortress with a bony club tail powerful enough to shatter bone.'},
+  {e:'🦅', n:'Velociraptor', era:'mesozoic', when:'75 Ma', diet:'Carnivore', size:'~2 m',
+   d:'A turkey-sized, feathered pack hunter with a deadly sickle claw — far smaller and fluffier than the movies suggest.'},
+  {e:'🐉', n:'Pteranodon', era:'mesozoic', when:'86 Ma', diet:'Piscivore', size:'6–7 m wingspan',
+   d:'A crested flying reptile that soared over Cretaceous seas, snatching fish like a giant pelican.'},
+  {e:'🐬', n:'Ichthyosaurus', era:'mesozoic', when:'190 Ma', diet:'Predator', size:'~3 m',
+   d:'A dolphin-shaped marine reptile with huge eyes, perfectly built for fast hunting in open water.'},
+  {e:'🦕', n:'Plesiosaurus', era:'mesozoic', when:'180 Ma', diet:'Predator', size:'~3.5 m',
+   d:'A long-necked marine reptile that “flew” through the water on four flipper-wings.'},
+  {e:'🐊', n:'Mosasaurus', era:'mesozoic', when:'70 Ma', diet:'Apex predator', size:'Up to 17 m',
+   d:'The apex predator of the late Cretaceous seas — a colossal marine lizard related to modern monitor lizards.'},
+  {e:'🦈', n:'Megalodon', era:'cenozoic', when:'15 Ma', diet:'Apex predator', size:'Up to 18 m',
+   d:'The largest shark ever — a monster whose teeth were as big as a human hand, hunting whales in warm seas.'},
+  {e:'🐋', n:'Basilosaurus', era:'cenozoic', when:'38 Ma', diet:'Apex predator', size:'Up to 18 m',
+   d:'An early, serpentine whale — showing the moment land mammals returned fully to the sea.'},
+  {e:'🦣', n:'Woolly Mammoth', era:'cenozoic', when:'0.4 Ma', diet:'Herbivore', size:'~3 m tall',
+   d:'A shaggy, tusked elephant of the Ice Age steppes, hunted by early humans and gone only ~4,000 years ago.'},
+  {e:'🐯', n:'Sabre-tooth Cat', era:'cenozoic', when:'1 Ma', diet:'Apex predator', size:'~1.2 m long',
+   d:'Smilodon — a powerful ambush cat with 18 cm canine fangs for delivering a fatal bite to large prey.'},
+  {e:'🦥', n:'Giant Ground Sloth', era:'cenozoic', when:'0.1 Ma', diet:'Herbivore', size:'Up to 6 m',
+   d:'Megatherium — an elephant-sized sloth that reared up to pull down whole tree branches.'},
+  {e:'🦏', n:'Paraceratherium', era:'cenozoic', when:'30 Ma', diet:'Herbivore', size:'~5 m tall',
+   d:'A hornless rhino relative and the largest land mammal ever — taller than a giraffe.'},
+  {e:'🦌', n:'Irish Elk', era:'cenozoic', when:'0.1 Ma', diet:'Herbivore', size:'3.6 m antlers',
+   d:'A giant deer with the largest antlers of any known animal — a spectacular Ice Age herbivore.'},
+  {e:'🐦', n:'Terror Bird', era:'cenozoic', when:'5 Ma', diet:'Apex predator', size:'Up to 3 m tall',
+   d:'Phorusrhacids — flightless giant birds that were top predators in South America after the dinosaurs.'},
+  {e:'🦍', n:'Australopithecus', era:'cenozoic', when:'3.2 Ma', diet:'Omnivore', size:'~1.1 m tall',
+   d:'“Lucy’s” kind — small, upright-walking apes on the road to becoming human.'},
+  {e:'🧑🏽', n:'Homo sapiens', era:'cenozoic', when:'0.3 Ma', diet:'Omnivore', size:'~1.7 m tall',
+   d:'Us — the storytelling ape, the only species to ponder the whole 4.6-billion-year journey that made it.'},
+];
+
+// Human evolution steps
+const HUMANS = [
+  {face:'🦍', when:'7 Ma', t:'Sahelanthropus', d:'One of the earliest known hominins, from Chad. Skull features hint it may already have walked upright — right around the split from chimpanzees.'},
+  {face:'🐒', when:'4.4 Ma', t:'Ardipithecus', d:'“Ardi” could climb trees and walk on two legs. A mosaic creature bridging ape and human ways of moving.'},
+  {face:'🚶', when:'3.2 Ma', t:'Australopithecus (“Lucy”)', d:'Fully upright walkers with ape-sized brains. Lucy’s famous skeleton showed our ancestors stood tall long before they grew clever.'},
+  {face:'🪨', when:'2.5 Ma', t:'Homo habilis', d:'The “handy human” — first confirmed stone-tool maker, with a slightly larger brain and a taste for meat.'},
+  {face:'🔥', when:'1.9 Ma', t:'Homo erectus', d:'Tall, long-legged and the first to master fire and leave Africa, spreading across Asia and Europe.'},
+  {face:'🧊', when:'0.4 Ma', t:'Neanderthals', d:'Robust, big-brained cousins adapted to Ice Age Europe. They made tools, buried their dead and interbred with us.'},
+  {face:'🎨', when:'0.3 Ma', t:'Homo sapiens', d:'Modern humans arise in Africa. Language, art and symbolic thought let culture evolve faster than biology ever could.'},
+  {face:'🏛️', when:'12 ka', t:'Farmers & Builders', d:'After the Ice Age, agriculture sparks villages, cities, writing and everything we call civilisation.'},
+  {face:'🌐', when:'Now', t:'Global Humanity', d:'Eight billion people, one connected world — and the first species capable of understanding its own origins.'},
+];
+
+// Mass extinctions
+const EXTINCTIONS = [
+  {t:'End-Ordovician', when:'444 Ma', pct:85, d:'Rapid ice ages froze and then drowned habitats, wiping out much marine life. The second-largest extinction.'},
+  {t:'Late Devonian', when:'375 Ma', pct:75, d:'A prolonged series of pulses devastated reef ecosystems and armoured fish over millions of years.'},
+  {t:'End-Permian — “The Great Dying”', when:'252 Ma', pct:96, d:'The worst extinction ever. Massive Siberian volcanism poisoned air and sea; ~96% of species vanished.'},
+  {t:'End-Triassic', when:'201 Ma', pct:80, d:'Volcanic eruptions as Pangaea split cleared many competitors — and opened the door for the dinosaurs.'},
+  {t:'End-Cretaceous (K-Pg)', when:'66 Ma', pct:76, d:'An asteroid impact ended the non-bird dinosaurs and reshaped life, letting mammals — and eventually us — rise.'},
+];
+
+const CAT_COLORS = {
+  formation:'#ffb454', ocean:'#4aa9e0', atmosphere:'#9ad0ff', life:'#7ef0a2',
+  animals:'#ff8bd0', human:'#ffd36b', extinction:'#ff5a6e'
+};
+
+/* ---- Planetary vitals keyframes (mya old->new). Approximate, illustrative. ---- */
+const VITALS = [
+  {mya:4600, day:6,   o2:0,    co2:100000, temp:200, sea:0},
+  {mya:4000, day:10,  o2:0,    co2:30000,  temp:75,  sea:15},
+  {mya:3500, day:12,  o2:0.1,  co2:10000,  temp:55,  sea:25},
+  {mya:2400, day:18,  o2:2,    co2:4000,   temp:20,  sea:20},
+  {mya:2000, day:19,  o2:3,    co2:3000,   temp:18,  sea:15},
+  {mya:1000, day:20,  o2:4,    co2:2000,   temp:16,  sea:10},
+  {mya:700,  day:21,  o2:6,    co2:1500,   temp:-5,  sea:-60},
+  {mya:541,  day:21.5,o2:15,   co2:4500,   temp:22,  sea:60},
+  {mya:445,  day:22,  o2:16,   co2:4000,   temp:15,  sea:150},
+  {mya:359,  day:22.4,o2:20,   co2:800,    temp:20,  sea:80},
+  {mya:300,  day:22.7,o2:35,   co2:300,    temp:14,  sea:-40},
+  {mya:252,  day:22.8,o2:15,   co2:900,    temp:25,  sea:20},
+  {mya:200,  day:23,  o2:13,   co2:1800,   temp:22,  sea:50},
+  {mya:150,  day:23.2,o2:20,   co2:1200,   temp:24,  sea:150},
+  {mya:100,  day:23.5,o2:23,   co2:1000,   temp:26,  sea:250},
+  {mya:66,   day:23.7,o2:26,   co2:500,    temp:24,  sea:200},
+  {mya:34,   day:23.8,o2:23,   co2:500,    temp:18,  sea:60},
+  {mya:20,   day:23.9,o2:21,   co2:400,    temp:17,  sea:30},
+  {mya:2.6,  day:24,  o2:21,   co2:280,    temp:14,  sea:-20},
+  {mya:0.02, day:24,  o2:21,   co2:280,    temp:14,  sea:0},
+  {mya:0,    day:24,  o2:21,   co2:421,    temp:15,  sea:0},
+];
+
+/* ---- Continental drift stages (stylised). Land blobs in a 200x200 viewBox circle. ---- */
+const DRIFT_STAGES = [
+  {mya:3800, name:'A world of small cratons', ocean:'#3a2020', blobs:[
+    [92,86,10],[110,104,8],[100,120,6]]},
+  {mya:1100, name:'Rodinia supercontinent', ocean:'#20304a', blobs:[
+    [100,100,44]]},
+  {mya:600, name:'Pannotia breaking apart', ocean:'#1c3550', blobs:[
+    [82,90,30],[122,116,22]]},
+  {mya:300, name:'Pangaea — one land', ocean:'#183a52', blobs:[
+    [100,72,26],[112,104,30],[92,132,24],[76,104,16]]},
+  {mya:180, name:'Pangaea rifts (Laurasia / Gondwana)', ocean:'#16405c', blobs:[
+    [86,80,26],[116,128,28]]},
+  {mya:90, name:'Continents spreading', ocean:'#14496a', blobs:[
+    [74,78,18],[120,72,16],[92,118,20],[130,124,14],[58,110,10]]},
+  {mya:0, name:'The modern world', ocean:'#0e5178', blobs:[
+    [70,74,16],[92,96,13],[86,128,18],[128,80,20],[138,120,12],[112,150,9],[54,96,8]]},
+];
+
+/* ---- Your lineage: the chain of ancestors from first cell to you ---- */
+const LINEAGE = [
+  {mya:4000, e:'🦠', t:'First cell', note:'Your ~4-billion-year-old ancestor: a single microbe in the early ocean. Every living thing shares it.'},
+  {mya:2100, e:'🧫', t:'Complex cell', note:'A cell swallowed another and kept it — the mitochondria still powering your body right now.'},
+  {mya:600,  e:'🪸', t:'First animals', note:'Cells learned teamwork. The animal body plan begins.'},
+  {mya:525,  e:'🐟', t:'First vertebrates', note:'A backbone appears — the same design that holds you up today.'},
+  {mya:375,  e:'🐸', t:'Onto land (tetrapods)', note:'Fins became limbs and lungs took over. Your arms and legs trace back to here.'},
+  {mya:320,  e:'🥚', t:'The amniote egg', note:'A shelled egg freed our ancestors from water for good.'},
+  {mya:200,  e:'🐭', t:'First mammals', note:'Small, warm-blooded, furry — and they fed their young milk, as your mother did you.'},
+  {mya:60,   e:'🐒', t:'First primates', note:'Grasping hands and forward-facing eyes for life in the trees.'},
+  {mya:7,    e:'🦍', t:'First hominins', note:'This branch of apes stood up and walked on two legs.'},
+  {mya:0.3,  e:'🧑🏽', t:'You', note:'Homo sapiens — the end of an unbroken 4-billion-year chain of survivors. Here you are.'},
+];
+
+/* ============================================================
+   TIME <-> POSITION mapping (log-ish for readability)
+   We use a piecewise scale so recent times aren't invisible.
+   ============================================================ */
+// Map mya -> fraction 0..1 across the scrubber, using sqrt compression
+function myaToFrac(mya){
+  // 0 at today (right), 1 at 4600 (left)... we want left=old right=new
+  const v = Math.sqrt(mya / T_START); // 0..1, compresses old times
+  return v; // fraction from RIGHT? We'll invert: left=old
+}
+// We'll render left = oldest (4600). frac 1 => leftmost. So x = (1-frac)*width => today at right.
+function myaToX(mya, width){
+  const f = myaToFrac(mya);      // 1 = oldest
+  return (1 - f) * width;        // oldest at x=0 (left)
+}
+function xToMya(x, width){
+  let f = 1 - (x / width);
+  f = Math.min(1, Math.max(0, f));
+  return f*f * T_START;
+}
+
+/* ============================================================
+   RENDER: static sections
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function buildOceanTime(){
+  $('#oceanTime').innerHTML = OCEAN_TIME.map(o=>`
+    <div class="card">
+      <span class="ce">${o.e}</span>
+      <div class="meta" style="color:${o.c}">${o.when}</div>
+      <h4>${o.t}</h4><p>${o.d}</p>
+    </div>`).join('');
+}
+function buildOceanDepth(){
+  $('#oceanDepth').innerHTML = OCEAN_DEPTH.map((o,i)=>`
+    <div class="ocean-layer" style="background:linear-gradient(180deg,${o.bg},${shade(o.bg,-18)})" data-i="${i}">
+      <div class="depth">${o.depth}</div>
+      <div class="txt"><h4>${o.name}</h4><p>${o.d}</p></div>
+      <div class="fauna">${o.fauna}</div>
+    </div>`).join('');
+}
+function buildLife(){
+  $('#lifeGrid').innerHTML = LIFE.map(l=>`
+    <div class="card">
+      <span class="ce">${l.e}</span>
+      <div class="meta" style="color:${l.c}">${l.m}</div>
+      <h4>${l.t}</h4><p>${l.d}</p>
+      <div class="barwrap"><div class="bar"><i style="width:${l.bar}%;background:${l.c}"></i></div>
+      <div class="barlabel">biodiversity ▸ ${l.bar}%</div></div>
+    </div>`).join('');
+  $('#kingdomGrid').innerHTML = KINGDOMS.map(k=>`
+    <div class="card">
+      <span class="ce">${k.e}</span><h4 style="color:${k.c}">${k.t}</h4><p>${k.d}</p>
+    </div>`).join('');
+}
+/* ============================================================
+   SVG CREATURE LIBRARY — cohesive colour-graded silhouettes
+   All face right, ground ~y72, viewBox 0 0 130 80. Built from
+   primitives so proportions stay reliable.
+   ============================================================ */
+const CSHAPE = {
+  sauropod:`<ellipse cx="62" cy="47" rx="34" ry="15"/><path d="M83,45 C85,29 92,14 102,10 C109,7 115,11 114,16 C113,21 106,23 102,26 C96,31 94,39 94,49 Z"/><ellipse cx="110" cy="13" rx="9" ry="6"/><path d="M30,47 C18,49 8,53 1,59 C10,57 20,54 34,52 Z"/><rect x="42" y="55" width="9" height="17" rx="3"/><rect x="56" y="56" width="9" height="16" rx="3"/><rect x="72" y="55" width="9" height="17" rx="3"/><rect x="84" y="54" width="9" height="16" rx="3"/>`,
+  theropod:`<ellipse cx="56" cy="40" rx="26" ry="14"/><path d="M40,44 C24,47 12,51 2,55 C12,50 24,44 42,36 Z"/><path d="M76,34 C80,23 88,17 99,15 C110,13 118,18 118,24 C118,31 109,32 100,32 C92,32 85,36 81,43 Z"/><path d="M111,20 L124,21 L114,29 Z"/><path d="M48,50 C45,58 43,65 41,72 L51,72 C52,64 54,57 57,52 Z"/><path d="M66,51 C64,59 63,66 62,72 L72,72 C72,64 73,57 75,52 Z"/><path d="M74,42 C80,44 85,47 87,51 C82,50 78,49 74,48 Z"/>`,
+  spinosaur:`<path d="M34,42 C40,20 54,10 70,12 C66,20 66,30 70,38 Z"/><ellipse cx="56" cy="42" rx="26" ry="14"/><path d="M40,46 C24,49 12,53 2,57 C12,52 24,46 42,38 Z"/><path d="M76,36 C82,26 92,20 104,20 C114,20 120,26 118,32 C116,37 108,36 100,35 C93,35 85,38 81,45 Z"/><path d="M48,52 C45,60 43,66 41,73 L51,73 C52,65 54,58 57,54 Z"/><path d="M66,53 C64,61 63,67 62,73 L72,73 C72,65 73,59 75,54 Z"/>`,
+  raptor:`<ellipse cx="52" cy="42" rx="20" ry="11"/><path d="M38,45 C26,47 16,51 8,55 C16,50 26,45 40,39 Z"/><path d="M66,38 C70,29 76,24 85,23 C94,22 100,27 99,32 C98,37 90,37 84,37 C78,37 72,40 69,45 Z"/><path d="M46,50 C43,58 42,65 40,72 L49,72 C50,64 52,57 54,52 Z"/><path d="M60,51 C58,59 57,65 56,72 L65,72 C65,64 66,58 68,53 Z"/><path d="M44,49 C40,55 36,60 30,64 C36,58 40,54 44,50 Z"/>`,
+  stegosaur:`<ellipse cx="60" cy="48" rx="30" ry="13"/><path d="M32,48 C20,50 10,54 2,60 C11,57 22,54 36,52 Z"/><path d="M84,46 C88,40 94,37 100,37 C96,42 94,47 94,52 Z"/><ellipse cx="99" cy="40" rx="7" ry="5"/><polygon points="44,38 50,20 56,38"/><polygon points="56,36 64,16 72,36"/><polygon points="72,37 80,20 86,38"/><rect x="46" y="56" width="8" height="16" rx="3"/><rect x="70" y="56" width="8" height="16" rx="3"/><path d="M6,58 l-4,-6 M6,62 l-5,-3" stroke="currentColor"/>`,
+  triceratops:`<ellipse cx="52" cy="48" rx="28" ry="13"/><path d="M26,48 C16,50 8,53 2,58 C10,56 18,54 30,52 Z"/><path d="M78,40 C78,30 86,26 96,27 C104,28 108,34 106,42 C104,49 96,52 88,50 C82,49 78,46 78,40 Z"/><path d="M100,30 C108,26 116,26 120,30 C114,30 108,32 104,36 Z"/><polygon points="96,30 104,18 100,32"/><polygon points="104,32 114,24 106,36"/><rect x="40" y="56" width="8" height="16" rx="3"/><rect x="62" y="56" width="8" height="16" rx="3"/>`,
+  ankylosaur:`<path d="M20,52 C24,42 40,36 62,36 C84,36 98,42 102,52 C98,58 84,60 62,60 C40,60 26,58 20,52 Z"/><ellipse cx="108" cy="50" rx="10" ry="6"/><path d="M18,50 C10,48 4,46 1,42 C6,46 12,49 20,52 Z"/><circle cx="6" cy="44" r="5"/><rect x="36" y="56" width="8" height="14" rx="3"/><rect x="78" y="56" width="8" height="14" rx="3"/><polygon points="40,36 44,28 48,36"/><polygon points="60,34 64,26 68,34"/><polygon points="80,36 84,28 88,36"/>`,
+  pterosaur:`<path d="M64,30 C40,18 18,14 2,20 C20,24 36,30 60,36 Z"/><path d="M66,30 C90,18 112,14 128,20 C110,24 94,30 70,36 Z"/><ellipse cx="64" cy="36" rx="10" ry="6"/><path d="M74,34 C82,32 92,32 100,34 C92,36 84,38 76,40 Z"/><path d="M60,40 C58,50 56,58 54,66 L62,66 C64,56 66,46 68,40 Z"/>`,
+  marine:`<path d="M18,42 C30,30 54,26 78,30 C96,33 108,38 116,44 C108,50 96,55 78,58 C54,62 30,58 18,46 Z"/><path d="M18,44 C10,40 4,34 2,26 C4,36 8,42 16,46 C8,50 4,56 2,62 C6,54 12,48 18,46 Z"/><path d="M60,30 C58,24 60,18 66,16 C64,22 66,28 70,32 Z"/><path d="M70,52 C74,58 74,64 70,68 C72,62 70,56 66,52 Z"/><circle cx="104" cy="42" r="3.2" fill="#fff"/><circle cx="105" cy="42" r="1.6"/>`,
+  plesiosaur:`<ellipse cx="54" cy="46" rx="24" ry="14"/><path d="M74,42 C80,30 90,18 102,12 C110,8 116,12 114,17 C112,22 104,22 100,26 C94,32 90,40 88,48 Z"/><ellipse cx="110" cy="12" rx="7" ry="5"/><path d="M32,48 C22,52 14,56 8,60 C16,54 24,50 34,48 Z"/><path d="M46,56 C44,64 44,68 42,72 C48,66 50,60 52,56 Z"/><path d="M64,56 C62,64 62,68 60,72 C66,66 68,60 70,56 Z"/>`,
+  shark:`<path d="M20,44 C34,32 58,28 84,32 C102,35 114,40 122,46 C114,52 102,57 84,60 C58,64 34,60 20,48 Z"/><path d="M20,46 C12,42 6,36 3,28 C5,38 9,44 18,48 C9,52 5,58 3,66 C7,58 12,52 20,48 Z"/><path d="M64,32 C62,22 66,14 74,12 C71,20 73,28 78,34 Z"/><path d="M70,54 C74,60 76,66 74,72 C74,64 70,58 64,54 Z"/><circle cx="108" cy="44" r="3" fill="#fff"/><circle cx="109" cy="44" r="1.5"/>`,
+  whale:`<path d="M14,44 C30,32 62,28 92,34 C108,37 118,42 124,48 C116,54 104,58 88,60 C60,64 30,60 14,50 Z"/><path d="M14,47 C8,44 4,40 2,34 C4,42 8,46 14,49 C8,52 4,58 2,64 C6,56 10,51 16,49 Z"/><path d="M56,56 C60,62 60,68 56,72 C58,64 54,58 48,56 Z"/><circle cx="110" cy="46" r="3" fill="#fff"/><circle cx="111" cy="46" r="1.5"/>`,
+  fish:`<path d="M22,42 C36,32 58,30 80,34 C94,37 104,42 110,48 C104,54 94,58 80,61 C58,64 36,60 22,50 Z"/><path d="M22,46 C14,42 8,36 5,30 C8,40 12,46 20,48 C12,52 8,58 5,66 C9,56 14,50 22,48 Z"/><path d="M56,34 C54,26 58,20 64,18 C62,24 64,30 68,36 Z"/><circle cx="98" cy="44" r="3" fill="#fff"/><circle cx="99" cy="44" r="1.5"/>`,
+  dunkleosteus:`<path d="M24,40 C36,30 52,28 66,32 C64,40 64,48 66,58 C52,62 36,58 24,50 Z"/><path d="M64,32 C82,32 100,36 112,46 C100,55 82,58 64,58 C66,48 66,40 64,32 Z"/><path d="M24,44 C16,40 10,34 7,28 C10,38 14,44 22,46 C14,50 10,56 7,64 C11,54 16,48 24,48 Z"/><circle cx="40" cy="40" r="3" fill="#fff"/><circle cx="41" cy="40" r="1.5"/>`,
+  trilobite:`<ellipse cx="50" cy="40" rx="42" ry="24"/><path d="M50,16 C50,16 50,64 50,64" stroke="rgba(0,0,0,.22)" stroke-width="2"/><g fill="rgba(0,0,0,.16)"><path d="M18,26 C24,32 24,48 18,54 Z"/><path d="M30,20 C36,28 36,52 30,60 Z"/><path d="M42,17 C48,27 48,53 42,63 Z"/></g><path d="M88,30 C96,34 96,46 88,50 Z"/>`,
+  ammonite:`<circle cx="60" cy="42" r="34"/><g fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2.4"><path d="M60,42 m0,-26 a26,26 0 1 1 -0.1,0"/><path d="M60,42 m0,-16 a16,16 0 1 0 0.1,0"/><path d="M60,42 m0,-7 a7,7 0 1 1 -0.1,0"/></g><path d="M92,50 C102,54 112,58 120,64 C110,60 100,56 90,54 Z"/>`,
+  dragonfly:`<ellipse cx="60" cy="40" rx="6" ry="4"/><rect x="60" y="37" width="52" height="6" rx="3"/><ellipse cx="118" cy="40" rx="7" ry="6"/><g fill-opacity="0.55"><path d="M56,38 C40,26 20,22 8,26 C22,30 40,34 54,40 Z"/><path d="M56,42 C40,54 20,58 8,54 C22,50 40,46 54,40 Z"/><path d="M64,38 C52,28 38,24 28,26 C40,30 52,34 62,40 Z"/><path d="M64,42 C52,52 38,56 28,54 C40,50 52,46 62,40 Z"/></g><circle cx="120" cy="38" r="2" fill="#fff"/>`,
+  scorpion:`<ellipse cx="46" cy="46" rx="20" ry="11"/><ellipse cx="72" cy="44" rx="10" ry="7"/><path d="M80,42 C92,40 104,34 108,24 C110,16 106,10 100,10 C104,14 104,20 100,26 C96,32 88,38 80,40 Z"/><circle cx="100" cy="11" r="4"/><path d="M28,44 C18,40 10,44 6,50 C12,48 18,48 24,50 Z"/><path d="M30,50 C20,50 12,56 8,62 C14,58 20,56 26,56 Z"/><rect x="38" y="54" width="4" height="14" rx="2"/><rect x="48" y="54" width="4" height="14" rx="2"/>`,
+  anomalocaris:`<path d="M24,40 C40,32 64,30 86,34 C100,37 108,42 112,48 C104,53 92,56 78,57 C58,59 38,54 24,48 Z"/><g fill="rgba(0,0,0,.15)"><path d="M40,54 l4,8 M52,56 l4,8 M64,56 l4,8 M76,55 l4,8" stroke="rgba(0,0,0,.2)" stroke-width="3"/></g><path d="M110,42 C118,36 126,34 128,38 C122,40 116,44 112,48 Z"/><path d="M110,52 C118,58 126,60 128,56 C122,54 116,50 112,48 Z"/><ellipse cx="30" cy="40" rx="8" ry="7"/><circle cx="28" cy="38" r="3" fill="#fff"/>`,
+  dimetrodon:`<path d="M28,48 C34,20 52,8 72,12 C64,22 62,36 66,48 Z"/><ellipse cx="56" cy="50" rx="30" ry="12"/><path d="M28,50 C18,52 10,56 4,60 C12,58 20,55 32,54 Z"/><path d="M82,48 C90,46 98,46 104,50 C98,52 92,54 86,56 Z"/><ellipse cx="102" cy="50" rx="7" ry="5"/><rect x="40" y="58" width="7" height="12" rx="3"/><rect x="66" y="58" width="7" height="12" rx="3"/>`,
+  mammoth:`<path d="M30,40 C30,26 46,20 62,20 C82,20 96,26 98,42 C100,54 92,60 78,60 C60,60 40,58 32,52 Z"/><path d="M96,40 C104,38 112,40 114,48 C110,50 104,50 100,48 Z"/><path d="M112,50 C118,56 118,64 112,70 C114,62 110,56 104,54 Z"/><path d="M108,54 C102,64 92,66 90,60 C96,60 102,58 104,52 Z"/><ellipse cx="60" cy="24" rx="20" ry="10"/><rect x="40" y="56" width="9" height="16" rx="3"/><rect x="70" y="56" width="9" height="16" rx="3"/><circle cx="104" cy="44" r="2.4" fill="#fff"/>`,
+  cat:`<ellipse cx="52" cy="44" rx="26" ry="13"/><ellipse cx="86" cy="38" rx="12" ry="10"/><polygon points="78,30 80,20 86,28"/><polygon points="92,28 96,20 98,30"/><path d="M26,44 C16,42 8,46 4,52 C12,48 18,48 26,50 Z"/><path d="M40,54 C38,62 37,66 36,72 L44,72 C45,64 47,58 48,54 Z"/><path d="M66,54 C64,62 63,66 62,72 L70,72 C71,64 72,58 73,54 Z"/><path d="M84,46 L86,54 L88,46 Z" fill="#fff"/><circle cx="90" cy="36" r="2.2" fill="#fff"/>`,
+  sloth:`<path d="M40,34 C40,22 54,16 68,18 C84,20 92,32 90,48 C88,60 76,64 64,62 C50,60 40,50 40,38 Z"/><path d="M42,44 C34,50 28,58 26,68 C32,60 40,54 48,52 Z"/><path d="M26,66 C22,68 20,72 22,74 C24,70 28,68 32,68 Z"/><ellipse cx="80" cy="30" rx="10" ry="9"/><rect x="58" y="58" width="9" height="14" rx="3"/><rect x="74" y="56" width="9" height="14" rx="3"/><circle cx="84" cy="28" r="2.2" fill="#fff"/>`,
+  rhino:`<ellipse cx="56" cy="36" rx="30" ry="15"/><path d="M84,30 C92,24 102,22 108,26 C102,30 96,34 90,40 C88,34 86,32 84,32 Z"/><ellipse cx="104" cy="28" rx="9" ry="7"/><path d="M28,36 C18,36 10,40 6,46 C14,42 20,42 28,44 Z"/><rect x="40" y="48" width="9" height="24" rx="3"/><rect x="60" y="48" width="9" height="24" rx="3"/><rect x="76" y="46" width="8" height="20" rx="3"/><circle cx="106" cy="26" r="2.2" fill="#fff"/>`,
+  deer:`<ellipse cx="52" cy="42" rx="24" ry="11"/><path d="M74,38 C80,30 86,26 92,26 C90,32 90,38 92,44 Z"/><ellipse cx="94" cy="24" rx="7" ry="5"/><g fill="none" stroke="currentColor" stroke-width="3"><path d="M92,20 C88,10 80,6 72,8"/><path d="M96,20 C100,8 110,4 118,8"/><path d="M90,16 l-8,-4 M98,16 l8,-6 M100,14 l10,-2"/></g><path d="M30,44 C22,44 16,48 12,52 C18,48 24,48 30,50 Z"/><rect x="40" y="50" width="6" height="22" rx="2"/><rect x="60" y="50" width="6" height="22" rx="2"/>`,
+  bird:`<ellipse cx="54" cy="46" rx="22" ry="14"/><path d="M70,40 C74,30 80,24 88,22 C82,30 82,38 84,46 Z"/><ellipse cx="88" cy="20" rx="8" ry="6"/><polygon points="94,20 106,22 94,26"/><path d="M40,48 C32,52 26,58 22,66 C30,58 38,54 46,52 Z"/><path d="M52,58 C50,64 50,68 48,72 L54,72 C55,66 56,62 57,58 Z"/><path d="M62,58 C60,64 60,68 58,72 L64,72 C65,66 66,62 67,58 Z"/><circle cx="90" cy="19" r="2.2" fill="#fff"/>`,
+  terrorbird:`<ellipse cx="58" cy="34" rx="18" ry="16"/><path d="M70,22 C74,14 80,10 88,10 C84,16 84,24 82,30 Z"/><ellipse cx="86" cy="12" rx="9" ry="8"/><path d="M92,8 C100,6 104,12 100,20 C98,14 94,12 90,14 Z"/><path d="M50,48 C48,58 47,66 46,74 L52,74 C54,64 56,54 56,48 Z"/><path d="M64,48 C62,58 61,66 60,74 L66,74 C68,64 70,54 70,48 Z"/><circle cx="88" cy="10" r="2.4" fill="#fff"/>`,
+  hominin:`<circle cx="64" cy="16" r="9"/><path d="M56,26 C56,26 72,26 72,26 C76,26 78,30 78,36 L74,52 L70,52 L68,38 L60,38 L58,52 L54,52 L50,36 C50,30 52,26 56,26 Z"/><path d="M60,52 C58,60 57,66 56,73 L62,73 C63,66 64,60 64,54 Z"/><path d="M68,52 C68,60 69,66 70,73 L64,73 C64,66 64,60 64,54 Z"/><path d="M52,34 C46,38 42,44 40,50 C44,44 50,40 56,38 Z"/><path d="M76,34 C82,38 86,44 88,50 C84,44 78,40 72,38 Z"/><circle cx="61" cy="15" r="1.8" fill="#fff"/>`,
+};
+const NAME2SHAPE = {
+  'Trilobite':'trilobite','Anomalocaris':'anomalocaris','Ammonite':'ammonite','Sea Scorpion':'scorpion',
+  'Dunkleosteus':'dunkleosteus','Tiktaalik':'fish','Dimetrodon':'dimetrodon','Meganeura':'dragonfly',
+  'Coelophysis':'raptor','Plateosaurus':'sauropod','Brachiosaurus':'sauropod','Diplodocus':'sauropod',
+  'Allosaurus':'theropod','Stegosaurus':'stegosaur','Archaeopteryx':'bird','Spinosaurus':'spinosaur',
+  'Tyrannosaurus rex':'theropod','Triceratops':'triceratops','Ankylosaurus':'ankylosaur','Velociraptor':'raptor',
+  'Pteranodon':'pterosaur','Ichthyosaurus':'marine','Plesiosaurus':'plesiosaur','Mosasaurus':'marine',
+  'Megalodon':'shark','Basilosaurus':'whale','Woolly Mammoth':'mammoth','Sabre-tooth Cat':'cat',
+  'Giant Ground Sloth':'sloth','Paraceratherium':'rhino','Irish Elk':'deer','Terror Bird':'terrorbird',
+  'Australopithecus':'hominin','Homo sapiens':'hominin',
+};
+let _cgid = 0;
+function creatureSVGShape(shape, eraKey, cls, label){
+  const era = ERAS.find(e=>e.key===eraKey) || ERAS[5];
+  const c = era.color, light = shade(c,45), mid = shade(c,8), dark = shade(c,-38);
+  const gid = 'cg'+(_cgid++);
+  return `<svg class="cre ${cls||''}" viewBox="0 0 130 80" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${label||shape}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="${light}"/><stop offset="0.5" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs>
+    <g fill="url(#${gid})" stroke="none" style="color:${dark}">${CSHAPE[shape]||CSHAPE.fish}</g></svg>`;
+}
+function creatureSVG(animal, cls){ return creatureSVGShape(NAME2SHAPE[animal.n]||'fish', animal.era, cls, animal.n); }
+// Which timeline events show an SVG creature in the scene (others keep their emoji)
+const EVENT_SHAPE = {
+  'The Cambrian Explosion':'anomalocaris',
+  'First Fish & Vertebrates':'fish',
+  'Arthropods & Life Leaves Water':'scorpion',
+  'Fish Crawl Ashore (Tetrapods)':'fish',
+  'Coal Forests & Giant Insects':'dragonfly',
+  'Age of the Sail-Backs':'dimetrodon',
+  'Dawn of the Dinosaurs':'raptor',
+  'Jurassic Giants':'sauropod',
+  'First Birds Take Flight':'bird',
+  'The Age of Mammals Begins':'mammoth',
+  'Whales Rule the Seas':'whale',
+  'Grasslands & Grazers':'deer',
+  'The First Hominins':'hominin',
+  'Stone Tools & the Genus Homo':'hominin',
+  'Fire & the Wanderers':'hominin',
+  'Homo sapiens Emerge':'hominin',
+};
+
+function buildAnimals(filter='all'){
+  const eras = [{k:'all',n:'All Eras'},{k:'paleozoic',n:'Paleozoic'},{k:'mesozoic',n:'Mesozoic'},{k:'cenozoic',n:'Cenozoic'}];
+  $('#animalFilters').innerHTML = eras.map(e=>
+    `<button data-f="${e.k}" class="${e.k===filter?'on':''}">${e.n}</button>`).join('');
+  const list = filter==='all'?ANIMALS:ANIMALS.filter(a=>a.era===filter);
+  $('#animalGrid').innerHTML = list.map((a,i)=>{
+    const era = ERAS.find(e=>e.key===a.era);
+    return `<div class="card animal" data-animal="${ANIMALS.indexOf(a)}">
+      <span class="era-pill" style="background:${era.color}">${era.name}</span>
+      <div class="cre-wrap">${creatureSVG(a)}</div>
+      <div class="meta">${a.when}</div>
+      <h4>${a.n}</h4><p>${a.d}</p>
+    </div>`;}).join('');
+}
+function buildHumans(){
+  $('#humanPath').innerHTML = HUMANS.map(h=>`
+    <div class="evostep">
+      <div class="when">${h.when}</div>
+      <div class="who"><span class="face">${h.face}</span>
+      <div><h4>${h.t}</h4><p>${h.d}</p></div></div>
+    </div>`).join('');
+}
+function buildExtinctions(){
+  $('#exWrap').innerHTML = EXTINCTIONS.map(x=>`
+    <div class="exrow">
+      <div class="top"><h4>${x.t} <span style="color:var(--ink-faint);font-weight:600;font-size:13px">· ${x.when}</span></h4>
+      <div class="pct" style="color:${x.pct>90?'#ff4d6d':'#ff9a59'}">${x.pct}%</div></div>
+      <div class="bar"><i style="width:${x.pct}%"></i></div>
+      <p>${x.d}</p>
+    </div>`).join('');
+}
+
+function shade(hex,pct){
+  const n=parseInt(hex.slice(1),16);let r=(n>>16)+pct*2.55, g=((n>>8)&255)+pct*2.55, b=(n&255)+pct*2.55;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+ (b|0)).toString(16).slice(1);
+}
+
+/* ============================================================
+   TIMELINE ENGINE
+   ============================================================ */
+let curMya = T_START;
+let playing = false;
+let speed = 1;
+let rafId = null;
+let lastTs = 0;
+
+const scrubber = $('#scrubber');
+const handle = $('#handle');
+const marker = $('#marker');
+const fill = $('#fill');
+
+function scrubW(){ return scrubber.clientWidth; }
+
+function nearestEventIndex(mya){
+  let bi=0, bd=Infinity;
+  EVENTS.forEach((e,i)=>{ const d=Math.abs(e.mya-mya); if(d<bd){bd=d;bi=i;} });
+  return bi;
+}
+
+function renderEras(){
+  const total = 1; // fraction
+  // build era bands proportional to their on-screen (compressed) width
+  const bands = ERAS.map(e=>{
+    const xFrom = myaToX(e.from, 1000)/1000; // fraction (left)
+    const xTo   = myaToX(e.to,   1000)/1000;
+    return {e, left:xFrom, w:(xTo-xFrom)};
+  });
+  $('#tlEras').innerHTML = bands.map(b=>
+    `<div class="band" data-era="${b.e.key}" title="${b.e.name}: ${b.e.from}–${b.e.to} Ma"
+      style="flex:0 0 ${b.w*100}%;background:${b.e.color}">
+      <span>${b.w>0.06?b.e.name:''}</span></div>`).join('');
+  // event dots
+  $('#eventDots').innerHTML = EVENTS.map((ev,i)=>{
+    const x = myaToX(ev.mya, 1000)/1000*100;
+    return `<div class="ed" data-ev="${i}" style="left:${x}%;background:${CAT_COLORS[ev.cat]||'#fff'}" title="${ev.title}"></div>`;
+  }).join('');
+  // ticks
+  const tickVals = [4600,4000,3000,2000,1000,541,252,66,0];
+  $('#ticks').innerHTML = tickVals.map(v=>{
+    const x = myaToX(v,1000)/1000*100;
+    const label = v>=1000? (v/1000)+' Ga' : v+' Ma';
+    return `<div class="t major" style="left:${x}%"><label>${label}</label></div>`;
+  }).join('');
+  // jump buttons
+  $('#jump').innerHTML = ERAS.map(e=>
+    `<button data-jump="${e.key}" style="border-color:${e.color}55">${e.name}</button>`).join('') +
+    `<button data-jump="today">Today</button>`;
+}
+
+function positionHandle(){
+  const w = scrubW();
+  const x = myaToX(curMya, w);
+  handle.style.left = x+'px';
+  marker.style.left = x+'px';
+  fill.style.width = x+'px';
+}
+
+let lastEvIdx = -1;
+function updateScene(){
+  const idx = nearestEventIndex(curMya);
+  const ev = EVENTS[idx];
+  const era = eraAt(curMya);
+  // era-level updates (cheap; run every call)
+  $('#eraName').textContent = era.name;
+  $('#eraDot').style.color = era.color;
+  $('#eraDot').style.background = era.color;
+  $('#roEra').textContent = era.name;
+  $('#roEon').textContent = era.eon;
+  setSkyEra(era);
+  // event-level rebuild only when the nearest event changes (keeps playback smooth)
+  if(idx === lastEvIdx) return;
+  lastEvIdx = idx;
+  const scene = $('#scene');
+  const emoji = $('#sceneEmoji');
+  const shp = EVENT_SHAPE[ev.title];
+  emoji.style.opacity = 0;
+  setTimeout(()=>{
+    if(shp){ emoji.classList.add('is-cre'); emoji.innerHTML = creatureSVGShape(shp, era.key, 'scene-cre', ev.title); }
+    else { emoji.classList.remove('is-cre'); emoji.innerHTML=''; emoji.textContent = ev.emoji; }
+    emoji.style.opacity = 1;
+  },140);
+  $$('#scene .subemoji').forEach(n=>n.remove());
+  (ev.sub||[]).forEach((s,i)=>{
+    const el=document.createElement('div');
+    el.className='subemoji';el.textContent=s;
+    const pos=[[10,18],[76,26],[20,72],[70,70]][i%4];
+    el.style.left=pos[0]+'%';el.style.top=pos[1]+'%';
+    el.style.animationDelay=(i*1.3)+'s';
+    scene.appendChild(el);
+  });
+  $('#evCat').textContent = ev.cat.toUpperCase();
+  $('#evCat').style.color = CAT_COLORS[ev.cat];
+  $('#evTitle').textContent = ev.title;
+  $('#evDesc').textContent = ev.desc;
+  $('#evFacts').innerHTML = ev.facts.map(f=>
+    `<li><span class="ic">◆</span><span>${f}</span></li>`).join('');
+  $('#evChips').innerHTML = ev.chips.map(c=>`<span class="chip">${c}</span>`).join('');
+  $('#roEvent').textContent = ev.title;
+}
+
+function fmtMya(m){
+  if(m>=1000) return (m/1000).toFixed(m>=100?2:2).replace(/\.00$/,'')+'k'; // not used typically
+  if(m===0) return '0';
+  if(m<0.02) return Math.round(m*1000000).toLocaleString(); // years for very recent
+  if(m<1) return m.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+  return Math.round(m).toLocaleString();
+}
+// nicer: show value + unit under it handled separately
+function updateMyaTag(){
+  let val, unit;
+  if(curMya<=0){ val='Today'; unit=''; }
+  else if(curMya<0.012){ val=Math.round(curMya*1e6).toLocaleString(); unit='years ago'; }
+  else if(curMya<1){ val=(curMya*1000).toFixed(0); unit='thousand yrs ago'; }
+  else if(curMya<1000){ val=Math.round(curMya).toLocaleString(); unit='million yrs ago'; }
+  else { val=(curMya/1000).toFixed(2); unit='billion yrs ago'; }
+  $('#myaVal').textContent = val;
+  $('#myaVal').nextElementSibling.textContent = unit;
+}
+
+function setMya(m, animate){
+  curMya = Math.min(T_START, Math.max(T_END, m));
+  positionHandle();
+  updateScene();
+  updateMyaTag();
+  updateVitals(curMya);
+  updateDrift(curMya);
+  updateSound(eraAt(curMya));
+  if(!playing && !dragging) syncHash();
+}
+function syncHash(){ try{ history.replaceState(null,'','#t='+curMya.toFixed(3)); }catch(e){} }
+
+/* playback: move from old->new over time. speed*: base ~ traverse in 40s at 1x */
+function tick(ts){
+  if(!playing) return;
+  if(!lastTs) lastTs=ts;
+  const dt=(ts-lastTs)/1000; lastTs=ts;
+  // move along the compressed fraction so it feels even
+  let f = myaToFrac(curMya);          // 1 old -> 0 today
+  f -= dt * 0.06 * speed;             // decrease toward today
+  if(f<=0){ f=0; setMya(0); stop(); return; }
+  const newMya = f*f*T_START;
+  setMya(newMya);
+  rafId=requestAnimationFrame(tick);
+}
+function play(){
+  if(curMya<=T_END){ setMya(T_START); }
+  playing=true; lastTs=0;
+  $('#playIcon').innerHTML='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+  rafId=requestAnimationFrame(tick);
+}
+function stop(){
+  playing=false; cancelAnimationFrame(rafId);
+  $('#playIcon').innerHTML='<path d="M8 5v14l11-7z"/>';
+}
+function togglePlay(){ playing?stop():play(); }
+
+function stepEvent(dir){
+  stop();
+  const i = nearestEventIndex(curMya);
+  // find current index; move to neighbor by mya order (events sorted old->new)
+  let ni = i;
+  // events array is old->new (descending mya). dir +1 => newer (toward today)
+  if(dir>0) ni = Math.min(EVENTS.length-1, i+1);
+  else ni = Math.max(0, i-1);
+  // if we're not exactly on an event, snap to nearest first
+  if(Math.abs(EVENTS[i].mya-curMya) > 1){ ni = i; }
+  setMya(EVENTS[ni].mya);
+  toast(EVENTS[ni].title);
+}
+
+/* ============================================================
+   SKY CANVAS — animated starfield + nebula, era-tinted
+   ============================================================ */
+const sky = $('#sky');
+const ctx = sky.getContext('2d');
+let stars=[], W=0, H=0, dpr=Math.min(2, window.devicePixelRatio||1);
+let skyTarget = {a:'#0a0f24', b:'#140a28'};
+let skyCur = {a:'#0a0f24', b:'#140a28'};
+
+function resizeSky(){
+  W=sky.clientWidth; H=sky.clientHeight;
+  sky.width=W*dpr; sky.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  makeStars();
+}
+function makeStars(){
+  const n=Math.round((W*H)/9000);
+  stars=[];
+  for(let i=0;i<n;i++){
+    stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.2,
+      tw:Math.random()*Math.PI*2, sp:Math.random()*0.02+0.004,
+      hue:Math.random()<0.2?200:60});
+  }
+}
+const ERA_SKY = {
+  hadean:{a:'#2a0d0d',b:'#4a1010'},        // fiery
+  archean:{a:'#301033',b:'#0d1b3a'},        // purple hazy
+  proterozoic:{a:'#0d2233',b:'#08303a'},    // teal oxidizing
+  paleozoic:{a:'#08202a',b:'#0a2f22'},      // green seas
+  mesozoic:{a:'#0a1730',b:'#111a3a'},       // blue
+  cenozoic:{a:'#0a1226',b:'#0e1e2e'},       // modern
+};
+function setSkyEra(era){
+  const t = ERA_SKY[era.key]||ERA_SKY.cenozoic;
+  skyTarget = t;
+  $('#veil').style.background =
+    `radial-gradient(120% 90% at 50% -10%, ${era.color}22 0%, transparent 45%, rgba(5,9,20,.55) 100%)`;
+}
+function lerpColor(a,b,t){
+  const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);
+  const ar=A>>16,ag=(A>>8)&255,ab=A&255,br=B>>16,bg=(B>>8)&255,bb=B&255;
+  const r=Math.round(ar+(br-ar)*t),g=Math.round(ag+(bg-ag)*t),bl=Math.round(ab+(bb-ab)*t);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);
+}
+let t0=0;
+function drawSky(ts){
+  const t=ts*0.001;
+  // ease sky colors
+  skyCur.a = lerpColor(skyCur.a, skyTarget.a, 0.02);
+  skyCur.b = lerpColor(skyCur.b, skyTarget.b, 0.02);
+  const g=ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,skyCur.a);g.addColorStop(1,skyCur.b);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // nebula blobs
+  const blobs=[[0.2,0.3,'#3b6cff'],[0.8,0.2,'#c04bff'],[0.6,0.8,'#16a5a5'],[0.35,0.75,'#ff5a6e']];
+  ctx.globalCompositeOperation='screen';
+  blobs.forEach((b,i)=>{
+    const x=(b[0]+Math.sin(t*0.1+i)*0.03)*W, y=(b[1]+Math.cos(t*0.13+i)*0.03)*H;
+    const rad=Math.max(W,H)*0.35;
+    const rg=ctx.createRadialGradient(x,y,0,x,y,rad);
+    rg.addColorStop(0,b[2]+'26');rg.addColorStop(1,b[2]+'00');
+    ctx.fillStyle=rg;ctx.beginPath();ctx.arc(x,y,rad,0,7);ctx.fill();
+  });
+  // stars
+  for(const s of stars){
+    s.tw+=s.sp;
+    const a=0.4+Math.sin(s.tw)*0.4;
+    ctx.beginPath();
+    ctx.fillStyle = s.hue===200? `rgba(180,210,255,${a})` : `rgba(255,240,200,${a})`;
+    ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+  requestAnimationFrame(drawSky);
+}
+
+/* ============================================================
+   SCRUBBER interactions (mouse + touch + keyboard)
+   ============================================================ */
+let dragging=false;
+function pointerToMya(clientX){
+  const rect=scrubber.getBoundingClientRect();
+  const x=clientX-rect.left;
+  return xToMya(x, rect.width);
+}
+function onDown(e){
+  dragging=true; stop();
+  const cx = e.touches?e.touches[0].clientX:e.clientX;
+  setMya(pointerToMya(cx));
+  e.preventDefault();
+}
+function onMove(e){
+  if(!dragging)return;
+  const cx = e.touches?e.touches[0].clientX:e.clientX;
+  setMya(pointerToMya(cx));
+  e.preventDefault();
+}
+function onUp(){ if(dragging){ dragging=false; syncHash(); } }
+
+scrubber.addEventListener('mousedown',onDown);
+window.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+scrubber.addEventListener('touchstart',onDown,{passive:false});
+window.addEventListener('touchmove',onMove,{passive:false});
+window.addEventListener('touchend',onUp);
+
+// click era bands / event dots / jump buttons
+document.addEventListener('click',e=>{
+  const band=e.target.closest('.band');
+  if(band){ const er=ERAS.find(x=>x.key===band.dataset.era); stop(); setMya((er.from+er.to)/2); toast(er.name+' Era'); }
+  const dot=e.target.closest('.ed');
+  if(dot){ stop(); const ev=EVENTS[+dot.dataset.ev]; setMya(ev.mya); toast(ev.title); }
+  const j=e.target.closest('[data-jump]');
+  if(j){ stop(); const k=j.dataset.jump;
+    if(k==='today') setMya(0);
+    else { const er=ERAS.find(x=>x.key===k); setMya(er.from-0.001); }
+    toast(k==='today'?'Present day':ERAS.find(x=>x.key===k).name);
+  }
+});
+
+$('#btnPlay').addEventListener('click',togglePlay);
+$('#btnPrev').addEventListener('click',()=>stepEvent(-1));
+$('#btnNext').addEventListener('click',()=>stepEvent(1));
+$('#speed').addEventListener('click',e=>{
+  const b=e.target.closest('[data-sp]'); if(!b)return;
+  speed=parseFloat(b.dataset.sp);
+  $$('#speed button').forEach(x=>x.classList.toggle('on',x===b));
+});
+
+/* ============================================================
+   VIEW SWITCHING / NAV
+   ============================================================ */
+function showView(v){
+  $$('.view').forEach(s=>s.classList.toggle('active', s.dataset.view===v));
+  $$('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  $('#tabs').classList.remove('open');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(v==='timeline'){ setTimeout(positionHandle,60); }
+  if(v==='quiz'){ quizStart(); }
+  if(v==='scale'){ renderScale(); }
+  if(v==='sizes'){ renderSizes(); }
+}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)showView(b.dataset.view);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-goto]');if(b)showView(b.dataset.goto);});
+$('#menuBtn').addEventListener('click',()=>$('#tabs').classList.toggle('open'));
+
+// animal filters + modal
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-f]'); if(f){ buildAnimals(f.dataset.f); }
+  const a=e.target.closest('[data-animal]');
+  if(a){ openAnimal(+a.dataset.animal); }
+});
+function openAnimal(i){
+  const a=ANIMALS[i]; const era=ERAS.find(x=>x.key===a.era);
+  $('#mE').innerHTML=creatureSVG(a,'modal-cre'); $('#mT').textContent=a.n;
+  $('#mS').textContent=era.name+' · '+a.when; $('#mS').style.color=era.color;
+  $('#mP').textContent=a.d;
+  $('#mKV').innerHTML=`
+    <div class="kv"><b>Era</b><span>${era.name} (${era.from}–${era.to} Ma)</span></div>
+    <div class="kv"><b>Appeared</b><span>${a.when}</span></div>
+    <div class="kv"><b>Diet</b><span>${a.diet}</span></div>
+    <div class="kv"><b>Size</b><span>${a.size}</span></div>`;
+  $('#modal').classList.add('open'); document.body.classList.add('no-scroll');
+}
+$('#modalClose').addEventListener('click',closeModal);
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+function closeModal(){$('#modal').classList.remove('open');document.body.classList.remove('no-scroll');}
+
+/* ocean layer tap = subtle expand */
+document.addEventListener('click',e=>{
+  const l=e.target.closest('.ocean-layer');
+  if(l){ l.style.transition='.3s'; l.style.transform=l.style.transform?'':'scale(1.01)';
+    setTimeout(()=>l.style.transform='',350); }
+});
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown',e=>{
+  const typing=/^(input|textarea)$/i.test((document.activeElement&&document.activeElement.tagName)||'');
+  // Esc closes any open modal / overlay
+  if(e.key==='Escape'){ closeModal(); closePostcard(); closeSearch(); storyExit(); return; }
+  // "/" opens search from anywhere (except while typing)
+  if(e.key==='/' && !typing){ e.preventDefault(); openSearch(); return; }
+  // Quiz answer keys 1–4 when the quiz is on screen
+  if($('#view-quiz').classList.contains('active')){
+    if(['1','2','3','4'].includes(e.key)){
+      const b=$$('#quizOptions .quiz-opt')[+e.key-1];
+      if(b && !b.disabled) quizAnswer(b.dataset.era);
+    }
+    return;
+  }
+  const onTimeline = $('#view-timeline').classList.contains('active');
+  if(!onTimeline) return;
+  switch(e.key){
+    case ' ': e.preventDefault(); togglePlay(); break;
+    case 'ArrowRight': e.preventDefault(); stepEvent(1); break;
+    case 'ArrowLeft': e.preventDefault(); stepEvent(-1); break;
+    case 'ArrowUp': e.preventDefault(); setMya(curMya-Math.max(1,curMya*0.05)); stop(); break;
+    case 'ArrowDown': e.preventDefault(); setMya(curMya+Math.max(1,curMya*0.05)); stop(); break;
+    case 'Home': e.preventDefault(); stop(); setMya(T_START); toast('Beginning of time'); break;
+    case 'End': e.preventDefault(); stop(); setMya(0); toast('Present day'); break;
+  }
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer=null;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+/* ============================================================
+   PLANETARY VITALS
+   ============================================================ */
+const VITAL_SPEC = [
+  {k:'day',  icon:'🕐', label:'Day length', unit:'hrs', min:0,   max:24,     fmt:v=>v.toFixed(1),                     color:'#8ce0ff'},
+  {k:'o2',   icon:'💨', label:'Oxygen',     unit:'%',   min:0,   max:35,     fmt:v=>v.toFixed(1),                     color:'#7ef0a2'},
+  {k:'co2',  icon:'🏭', label:'CO₂',        unit:'ppm', min:200, max:100000, log:true, fmt:v=>Math.round(v).toLocaleString(), color:'#ffbf47'},
+  {k:'temp', icon:'🌡️', label:'Global temp',unit:'°C',  min:-10, max:40,     fmt:v=>Math.round(v),                    color:'#ff6b4a'},
+  {k:'sea',  icon:'🌊', label:'Sea level',  unit:'m',   min:-120,max:260,    fmt:v=>(v>0?'+':'')+Math.round(v),       color:'#4aa9e0'},
+];
+function interpVitals(mya){
+  const V=VITALS;
+  if(mya>=V[0].mya) return V[0];
+  if(mya<=V[V.length-1].mya) return V[V.length-1];
+  for(let i=0;i<V.length-1;i++){
+    const a=V[i], b=V[i+1];
+    if(mya<=a.mya && mya>=b.mya){
+      const t=(a.mya-mya)/(a.mya-b.mya);
+      const o={}; ['day','o2','co2','temp','sea'].forEach(k=>o[k]=a[k]+(b[k]-a[k])*t);
+      return o;
+    }
+  }
+  return V[V.length-1];
+}
+function buildVitals(){
+  $('#vitals').innerHTML = VITAL_SPEC.map(s=>`
+    <div class="vital">
+      <div class="vh">${s.icon} ${s.label}</div>
+      <div class="vv"><span id="v_${s.k}">–</span><small>${s.unit}</small></div>
+      <div class="vbar"><i id="vb_${s.k}" style="background:${s.color}"></i></div>
+    </div>`).join('');
+}
+function updateVitals(mya){
+  const v=interpVitals(mya);
+  VITAL_SPEC.forEach(s=>{
+    const el=document.getElementById('v_'+s.k); if(!el)return;
+    const val=v[s.k]; el.textContent=s.fmt(val);
+    let f = s.log ? (Math.log(Math.max(val,s.min))-Math.log(s.min))/(Math.log(s.max)-Math.log(s.min))
+                  : (val-s.min)/(s.max-s.min);
+    f=Math.max(0,Math.min(1,f));
+    document.getElementById('vb_'+s.k).style.width=(f*100)+'%';
+  });
+}
+
+/* ============================================================
+   CONTINENTAL DRIFT
+   ============================================================ */
+function buildDrift(){
+  let h='<defs>'+
+    '<radialGradient id="landG" cx="40%" cy="35%"><stop offset="0%" stop-color="#8ed17a"/><stop offset="60%" stop-color="#4f9a52"/><stop offset="100%" stop-color="#2f6b3a"/></radialGradient>'+
+    '<clipPath id="globeClip"><circle cx="100" cy="100" r="92"/></clipPath></defs>';
+  h+='<circle class="ocean" id="driftOcean" cx="100" cy="100" r="92" fill="#0e5178"/>';
+  h+='<g clip-path="url(#globeClip)">';
+  DRIFT_STAGES.forEach((st,i)=>{
+    h+=`<g class="stage" data-i="${i}" opacity="0">`+
+      st.blobs.map(b=>`<circle cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="url(#landG)"/>`).join('')+
+      '</g>';
+  });
+  h+='</g>';
+  h+='<circle cx="100" cy="100" r="92" fill="none" stroke="rgba(160,220,255,.28)" stroke-width="2"/>';
+  h+='<ellipse cx="72" cy="66" rx="26" ry="16" fill="rgba(255,255,255,.10)"/>';
+  $('#drift').innerHTML=h;
+}
+function updateDrift(mya){
+  const S=DRIFT_STAGES, g=$$('#drift .stage');
+  let j=0;
+  if(mya>=S[0].mya) j=0;
+  else if(mya<=S[S.length-1].mya) j=S.length-2;
+  else { for(let i=0;i<S.length-1;i++){ if(mya<=S[i].mya && mya>=S[i+1].mya){j=i;break;} } }
+  const a=S[j], b=S[j+1]||S[j];
+  let t = a.mya===b.mya?0:(a.mya-mya)/(a.mya-b.mya);
+  t=Math.max(0,Math.min(1,t));
+  g.forEach((el,i)=>el.setAttribute('opacity', i===j?(1-t):(i===j+1?t:0)));
+  const oc=$('#driftOcean'); if(oc) oc.setAttribute('fill', lerpColor(a.ocean,b.ocean,t));
+  $('#driftName').textContent = t<0.5?a.name:b.name;
+}
+
+/* ============================================================
+   LINEAGE — the thread that leads to you
+   ============================================================ */
+function fmtAge(mya){
+  if(mya<=0) return 'today';
+  if(mya>=1000) return (mya/1000).toFixed(1)+' Ga';
+  if(mya>=1) return Math.round(mya)+' Ma';
+  if(mya>=0.001) return Math.round(mya*1000)+' ka';
+  return Math.round(mya*1e6)+' yr';
+}
+function buildLineage(){
+  $('#lineage').innerHTML = LINEAGE.map((l,i)=>`
+    <div class="node" data-ln="${i}">
+      <div class="bead">${l.e}</div>
+      <div class="nt">${l.t}</div>
+      <div class="nw">${fmtAge(l.mya)}</div>
+    </div>`).join('');
+}
+function highlightLineage(i){
+  const nodes=$$('#lineage .node');
+  nodes.forEach((n,k)=>n.classList.toggle('on',k===i));
+  if(nodes[i]) nodes[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+let traceTimer=null;
+function traceLineage(){
+  stop(); clearTimeout(traceTimer);
+  let i=0;
+  const step=()=>{
+    if(i>=LINEAGE.length){ toast('4 billion years — and here you are.'); return; }
+    const l=LINEAGE[i];
+    setMya(l.mya); highlightLineage(i);
+    $('#lineageNote').textContent = l.note;
+    toast(l.t);
+    i++; traceTimer=setTimeout(step, 2300);
+  };
+  step();
+}
+
+/* ============================================================
+   ERA SOUNDSCAPE (Web Audio — fully synthesised, no files)
+   ============================================================ */
+let audio=null, sndOn=false;
+function initAudio(){
+  if(audio) return;
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ctx=new AC();
+  const master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
+  // brown-noise wind/ocean
+  const buf=ctx.createBuffer(1, ctx.sampleRate*2, ctx.sampleRate);
+  const d=buf.getChannelData(0); let last=0;
+  for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.5; }
+  const noise=ctx.createBufferSource(); noise.buffer=buf; noise.loop=true;
+  const nFilter=ctx.createBiquadFilter(); nFilter.type='bandpass'; nFilter.frequency.value=500; nFilter.Q.value=0.7;
+  const nGain=ctx.createGain(); nGain.gain.value=0;
+  noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(master); noise.start();
+  // deep rumble
+  const rumble=ctx.createOscillator(); rumble.type='sine'; rumble.frequency.value=48;
+  const rGain=ctx.createGain(); rGain.gain.value=0; rumble.connect(rGain); rGain.connect(master); rumble.start();
+  // life shimmer with tremolo
+  const life=ctx.createOscillator(); life.type='triangle'; life.frequency.value=320;
+  const lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=7;
+  const lfoGain=ctx.createGain(); lfoGain.gain.value=0.6;
+  const lGain=ctx.createGain(); lGain.gain.value=0;
+  lfo.connect(lfoGain); lfoGain.connect(lGain.gain); life.connect(lGain); lGain.connect(master);
+  life.start(); lfo.start();
+  audio={ctx,master,nFilter,nGain,rGain,rumble,lGain,life};
+}
+const ERA_SOUND={
+  hadean:{n:[0.06,300],r:0.5, l:0,    rf:44},
+  archean:{n:[0.12,420],r:0.28,l:0,    rf:46},
+  proterozoic:{n:[0.18,620],r:0.12,l:0.02,rf:50,lf:180},
+  paleozoic:{n:[0.20,720],r:0.06,l:0.05,rf:55,lf:300},
+  mesozoic:{n:[0.16,520],r:0.08,l:0.04,rf:52,lf:220},
+  cenozoic:{n:[0.14,900],r:0.03,l:0.06,rf:60,lf:540},
+};
+function updateSound(era){
+  if(!audio||!sndOn) return;
+  const c=ERA_SOUND[era.key]||ERA_SOUND.cenozoic, t=audio.ctx.currentTime;
+  audio.nGain.gain.setTargetAtTime(c.n[0],t,0.7);
+  audio.nFilter.frequency.setTargetAtTime(c.n[1],t,0.7);
+  audio.rGain.gain.setTargetAtTime(c.r,t,0.7);
+  audio.rumble.frequency.setTargetAtTime(c.rf,t,0.7);
+  audio.lGain.gain.setTargetAtTime(c.l,t,0.7);
+  if(c.lf) audio.life.frequency.setTargetAtTime(c.lf,t,0.7);
+}
+function toggleSound(){
+  initAudio(); if(!audio){ toast('Audio not supported here'); return; }
+  if(audio.ctx.state==='suspended') audio.ctx.resume();
+  sndOn=!sndOn;
+  audio.master.gain.setTargetAtTime(sndOn?0.45:0, audio.ctx.currentTime, 0.4);
+  $('#soundIcon').innerHTML = sndOn
+    ? '<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>'
+    : '<path d="M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/>';
+  if(sndOn){ updateSound(eraAt(curMya)); toast('🔊 Era soundscape on'); } else toast('🔇 Sound off');
+}
+
+/* ============================================================
+   COSMIC CALENDAR / SCALE
+   ============================================================ */
+const SCALE_METRICS=[
+  {k:'year', label:'📅 A single year'},
+  {k:'day',  label:'🕐 A 24-hour day'},
+  {k:'field',label:'🏟️ A 100-metre field'},
+  {k:'life', label:'🧑 Your lifetime'},
+];
+const SCALE_EVENTS=[
+  {mya:4600,e:'🌌',t:'Earth forms'},
+  {mya:4000,e:'🦠',t:'First life'},
+  {mya:2400,e:'💨',t:'Oxygen fills the air'},
+  {mya:1200,e:'🌿',t:'Multicellular life'},
+  {mya:541, e:'🦐',t:'Cambrian explosion'},
+  {mya:230, e:'🦕',t:'First dinosaurs'},
+  {mya:66,  e:'☄️',t:'Dinosaurs die out'},
+  {mya:7,   e:'🦍',t:'First hominins'},
+  {mya:0.3, e:'🧑🏽',t:'Homo sapiens'},
+  {mya:0.012,e:'🏛️',t:'Farming & civilisation'},
+];
+let scaleMetric='year';
+const MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
+const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fracFromMya(mya){ return (T_START-mya)/T_START; } // 0 = start, 1 = now
+function pad(n){ return String(n).padStart(2,'0'); }
+function scaleWhen(mya){
+  const f=fracFromMya(mya);
+  if(scaleMetric==='year'){
+    let tot=f*365, dayNum=Math.floor(tot), frac=tot-dayNum;
+    if(dayNum>=365){dayNum=364;frac=0.9999;}
+    let mo=0; while(dayNum>=MONTH_DAYS[mo]){ dayNum-=MONTH_DAYS[mo]; mo++; }
+    const s=frac*86400;
+    return `${MONTH_NAMES[mo]} ${dayNum+1}, ${pad(Math.floor(s/3600))}:${pad(Math.floor(s%3600/60))}:${pad(Math.floor(s%60))}`;
+  }
+  if(scaleMetric==='day'){
+    const s=f*86400;
+    return `${pad(Math.floor(s/3600))}:${pad(Math.floor(s%3600/60))}:${pad(Math.floor(s%60))}`;
+  }
+  if(scaleMetric==='field'){
+    const m=f*100; return m>99.99? m.toFixed(3)+' m' : m.toFixed(2)+' m';
+  }
+  // life
+  const age=Math.max(1,+($('#ageInput').value||25));
+  const yrs=f*age, ago=age-yrs;
+  if(ago>=1) return `age ${yrs.toFixed(1)} · ${ago.toFixed(1)} yrs ago`;
+  const days=ago*365;
+  if(days>=1) return `age ${yrs.toFixed(2)} · ${Math.round(days)} days ago`;
+  return `age ${yrs.toFixed(3)} · ${Math.round(days*24)} hrs ago`;
+}
+const SCALE_HEAD={year:'a single year', day:'a 24-hour day', field:'a 100-metre walk', life:'your whole life'};
+const SCALE_TAIL={year:'~14 seconds', day:'~0.2 seconds', field:'0.26 mm', life:'a final blink'};
+function buildScaleMetrics(){
+  $('#scaleMetrics').innerHTML = SCALE_METRICS.map(m=>
+    `<button data-sm="${m.k}" class="${m.k===scaleMetric?'on':''}">${m.label}</button>`).join('');
+}
+function renderScale(){
+  $('#ageWrap').style.display = scaleMetric==='life'?'block':'none';
+  $('#scaleHeadline').innerHTML =
+    `If all 4.6 billion years were <b>${SCALE_HEAD[scaleMetric]}</b>, modern humans appear only at <b>${scaleWhen(0.3)}</b> — and all of recorded history fits in the final <b>${SCALE_TAIL[scaleMetric]}</b>.`;
+  $('#scaleBar').innerHTML = SCALE_EVENTS.map((ev,i)=>{
+    const f=fracFromMya(ev.mya);
+    const edge = f>0.82?' pin-r' : (f<0.12?' pin-l':'');
+    return `<div class="pin ${i%2?'low':''}${edge}" style="left:${(f*100).toFixed(2)}%"><span>${ev.e} ${ev.t}</span></div>`;
+  }).join('');
+  $('#scaleList').innerHTML = SCALE_EVENTS.map(ev=>`
+    <div class="scale-item"><span class="se">${ev.e}</span>
+      <div class="sd"><b>${ev.t}</b><span>${scaleWhen(ev.mya)}</span><small>${fmtAge(ev.mya)} ago</small></div>
+    </div>`).join('');
+}
+
+/* ============================================================
+   CLIMATE CHARTS
+   ============================================================ */
+const MODERN=[
+  {y:1850,co2:285,temp:-0.2},{y:1900,co2:296,temp:-0.15},{y:1950,co2:311,temp:-0.02},
+  {y:1980,co2:339,temp:0.28},{y:2000,co2:369,temp:0.5},{y:2010,co2:389,temp:0.72},
+  {y:2020,co2:414,temp:1.02},{y:2024,co2:422,temp:1.2},
+];
+function svgEl(t,a){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function poly(pts,color){return `<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" class="cline"/>`;}
+function dots(pts,color){return pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="${color}"/>`).join('');}
+function buildDeepChart(){
+  const L=55,R=55,Tm=22,B=42,VBW=900,VBH=340, pw=VBW-L-R, ph=VBH-Tm-B;
+  const data=VITALS.filter(v=>v.mya<=500).slice().sort((a,b)=>b.mya-a.mya);
+  const X=mya=>L+(1-(mya/500))*pw;
+  const tempY=t=>Tm+ph-((t+10)/50)*ph;      // temp -10..40
+  const co2Y=c=>Tm+ph-((Math.log(c)-Math.log(200))/(Math.log(6000)-Math.log(200)))*ph;
+  let h='';
+  // grid + x labels
+  [500,400,300,200,100,0].forEach(m=>{ const x=X(m);
+    h+=`<line class="grid-line" x1="${x}" y1="${Tm}" x2="${x}" y2="${Tm+ph}"/>`;
+    h+=`<text class="axis-label" x="${x}" y="${VBH-16}" text-anchor="middle">${m===0?'now':m+'Ma'}</text>`;
+  });
+  h+=`<line class="axis" x1="${L}" y1="${Tm+ph}" x2="${VBW-R}" y2="${Tm+ph}"/>`;
+  h+=poly(data.map(v=>[X(v.mya),co2Y(v.co2)]),'#ffbf47');
+  h+=poly(data.map(v=>[X(v.mya),tempY(v.temp)]),'#ff6b4a');
+  h+=dots(data.map(v=>[X(v.mya),tempY(v.temp)]),'#ff6b4a');
+  $('#chartDeep').setAttribute('viewBox',`0 0 ${VBW} ${VBH}`);
+  $('#chartDeep').innerHTML=h;
+}
+function buildModernChart(){
+  const L=55,R=55,Tm=22,B=42,VBW=900,VBH=340, pw=VBW-L-R, ph=VBH-Tm-B;
+  const X=y=>L+((y-1850)/(2024-1850))*pw;
+  const tempY=t=>Tm+ph-((t+0.4)/1.9)*ph;    // -0.4..1.5
+  const co2Y=c=>Tm+ph-((c-270)/(440-270))*ph;
+  let h='';
+  [1850,1900,1950,2000,2024].forEach(y=>{ const x=X(y);
+    h+=`<line class="grid-line" x1="${x}" y1="${Tm}" x2="${x}" y2="${Tm+ph}"/>`;
+    h+=`<text class="axis-label" x="${x}" y="${VBH-16}" text-anchor="middle">${y}</text>`;
+  });
+  h+=`<line class="axis" x1="${L}" y1="${Tm+ph}" x2="${VBW-R}" y2="${Tm+ph}"/>`;
+  h+=poly(MODERN.map(m=>[X(m.y),co2Y(m.co2)]),'#ffbf47');
+  h+=poly(MODERN.map(m=>[X(m.y),tempY(m.temp)]),'#ff6b4a');
+  h+=dots(MODERN.map(m=>[X(m.y),tempY(m.temp)]),'#ff6b4a');
+  h+=dots(MODERN.map(m=>[X(m.y),co2Y(m.co2)]),'#ffbf47');
+  $('#chartModern').setAttribute('viewBox',`0 0 ${VBW} ${VBH}`);
+  $('#chartModern').innerHTML=h;
+}
+const SCENARIOS=[
+  {t:'+1.5 °C', n:'Best case', d:'Emissions fall to net-zero fast. Warming stabilises near the Paris 1.5 °C goal.'},
+  {t:'+1.8 °C', n:'Strong action', d:'Rapid cuts to emissions keep warming close to the Paris goals.'},
+  {t:'+2.7 °C', n:'Current path', d:'Today’s policies continued — widespread disruption to ecosystems and people.'},
+  {t:'+4.4 °C', n:'High emissions', d:'Little action taken — severe, in places irreversible, changes to the planet.'},
+];
+function updateScenario(i){
+  const s=SCENARIOS[i]||SCENARIOS[1];
+  $('#scTemp').textContent=s.t;
+  $('#scTemp').style.color = i<=1?'#7ef0a2':(i===2?'#ffbf47':'#ff5a6e');
+  $('#scName').textContent=s.n; $('#scDesc').textContent=s.d;
+}
+
+/* ============================================================
+   SHARE LINKS + POSTCARD
+   ============================================================ */
+function currentLink(){
+  return location.href.split('#')[0] + '#t=' + curMya.toFixed(3);
+}
+function copyText(txt, okMsg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast(okMsg)).catch(()=>fallbackCopy(txt,okMsg));
+  } else fallbackCopy(txt,okMsg);
+}
+function fallbackCopy(txt,okMsg){
+  const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast(okMsg); }catch(e){ toast('Copy failed — link is in the address bar'); }
+  document.body.removeChild(ta);
+}
+function shareMoment(){ history.replaceState(null,'',currentLink()); copyText(currentLink(),'🔗 Link copied to clipboard'); }
+
+function drawPostcard(){
+  const cv=$('#pcCanvas'), c=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const ev=EVENTS[nearestEventIndex(curMya)], era=eraAt(curMya), sky=ERA_SKY[era.key]||ERA_SKY.cenozoic;
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,sky.a); g.addColorStop(1,sky.b);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.fillStyle='#fff';
+  for(let i=0;i<140;i++){ c.globalAlpha=Math.random()*0.8+0.15; c.beginPath();
+    c.arc(Math.random()*W, Math.random()*H*0.78, Math.random()*1.7, 0, 7); c.fill(); }
+  c.globalAlpha=1;
+  const rg=c.createRadialGradient(W/2,H*0.36,0,W/2,H*0.36,W*0.42);
+  rg.addColorStop(0,era.color+'66'); rg.addColorStop(1,era.color+'00');
+  c.fillStyle=rg; c.fillRect(0,0,W,H);
+  c.textAlign='center'; c.textBaseline='middle';
+  c.font='150px serif'; c.fillText(ev.emoji, W/2, H*0.33);
+  c.fillStyle='#fff';
+  let mtag = curMya<=0?'TODAY' : curMya<0.012?Math.round(curMya*1e6).toLocaleString()+' yrs ago'
+           : curMya<1?Math.round(curMya*1000)+' ka' : curMya<1000?Math.round(curMya)+' Ma' : (curMya/1000).toFixed(2)+' Ga';
+  c.font='bold 66px system-ui,sans-serif'; c.fillText(mtag, W/2, H*0.585);
+  c.font='bold 42px system-ui,sans-serif'; c.fillText(ev.title, W/2, H*0.70);
+  c.fillStyle=era.color; c.font='700 24px system-ui,sans-serif';
+  c.fillText(era.name.toUpperCase()+'  ·  '+era.eon.toUpperCase(), W/2, H*0.80);
+  c.fillStyle='rgba(255,255,255,.72)'; c.font='600 22px system-ui,sans-serif';
+  c.fillText('CHRONOSPHERE — THE JOURNEY OF EARTH', W/2, H*0.90);
+  c.strokeStyle=era.color; c.lineWidth=10; c.strokeRect(6,6,W-12,H-12);
+  $('#pcDownload').href = cv.toDataURL('image/png');
+}
+function openPostcard(){ drawPostcard(); $('#pcModal').classList.add('open'); document.body.classList.add('no-scroll'); }
+function closePostcard(){ $('#pcModal').classList.remove('open'); document.body.classList.remove('no-scroll'); }
+
+/* ============================================================
+   TIME DETECTIVE QUIZ
+   ============================================================ */
+let quiz={i:0,score:0,streak:0,total:10,cur:null,answered:true,started:false};
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function quizStart(){
+  quiz={i:0,score:0,streak:0,total:10,cur:null,answered:false,started:true};
+  $('#quizResult').style.display='none'; $('#quizPanel').style.display='block';
+  $('#qTotal').textContent=quiz.total; $('#qScore').textContent=0; $('#qStreak').textContent=0;
+  nextQuiz();
+}
+function nextQuiz(){
+  quiz.answered=false;
+  const fb=$('#quizFeedback'); fb.textContent=''; fb.className='quiz-feedback';
+  const a=ANIMALS[Math.floor(Math.random()*ANIMALS.length)]; quiz.cur=a;
+  const correct=ERAS.find(e=>e.key===a.era);
+  const others=shuffle(ERAS.filter(e=>e.key!==a.era)).slice(0,3);
+  const opts=shuffle([correct,...others]);
+  quiz._opts=opts;
+  $('#qNum').textContent=quiz.i+1;
+  $('#quizStage').innerHTML=creatureSVG(a,'quiz-cre');
+  $('#quizQ').innerHTML=`In which era did <b>${a.n}</b> first appear?<span class="quiz-hint">${a.d}</span>`;
+  $('#quizOptions').innerHTML=opts.map((e,k)=>
+    `<button class="quiz-opt" data-era="${e.key}"><kbd>${k+1}</kbd><span>${e.name}</span></button>`).join('');
+}
+function quizAnswer(eraKey){
+  if(quiz.answered||!quiz.cur)return; quiz.answered=true;
+  const correct=quiz.cur.era, ok=eraKey===correct;
+  if(ok){quiz.score++;quiz.streak++;} else quiz.streak=0;
+  $('#qScore').textContent=quiz.score; $('#qStreak').textContent=quiz.streak;
+  $$('#quizOptions .quiz-opt').forEach(b=>{
+    if(b.dataset.era===correct)b.classList.add('correct');
+    else if(b.dataset.era===eraKey)b.classList.add('wrong');
+    b.disabled=true;
+  });
+  const era=ERAS.find(e=>e.key===correct); const fb=$('#quizFeedback');
+  fb.textContent = ok? `✓ Correct! ${quiz.cur.n} lived in the ${era.name} (${quiz.cur.when}).`
+                     : `✗ Not quite — it was the ${era.name} (${quiz.cur.when}).`;
+  fb.className='quiz-feedback '+(ok?'good':'bad');
+  quiz.i++;
+  setTimeout(()=>{ quiz.i>=quiz.total ? quizEnd() : nextQuiz(); }, 1700);
+}
+function quizEnd(){
+  $('#quizPanel').style.display='none';
+  const pct=quiz.score/quiz.total;
+  const rank = pct===1?['🏆','Time Lord'] : pct>=0.8?['🥇','Master Chronologist'] :
+               pct>=0.6?['🥈','Deep-Time Detective'] : pct>=0.4?['🥉','Apprentice Sleuth'] : ['🔰','Time Tourist'];
+  $('#quizResult').style.display='block';
+  $('#quizResult').innerHTML=`<div style="text-align:center">
+    <div style="font-size:70px;line-height:1">${rank[0]}</div>
+    <h3 style="margin:8px 0;font-size:34px">${quiz.score} / ${quiz.total}</h3>
+    <div class="cat" style="color:var(--accent)">${rank[1]}</div>
+    <p style="color:var(--ink-dim);max-width:42ch;margin:14px auto 20px">${pct>=0.8?'Astonishing command of deep time — you could guide a tour through 4 billion years.':'Every journey through deep time teaches something new. Try again and climb the ranks!'}</p>
+    <button class="btn primary" id="quizAgain">🔄 Play again</button></div>`;
+}
+
+/* ============================================================
+   SIZE COMPARATOR
+   ============================================================ */
+const SIZES = [
+  {shape:'__human', n:'Human', m:1.8, era:'cenozoic', dim:'h', on:true},
+  {shape:'trilobite', n:'Trilobite', m:0.6, era:'paleozoic', on:false},
+  {shape:'raptor', n:'Velociraptor', m:2, era:'mesozoic', on:false},
+  {shape:'cat', n:'Sabre-tooth Cat', m:2, era:'cenozoic', on:false},
+  {shape:'mammoth', n:'Woolly Mammoth', m:5, era:'cenozoic', on:false},
+  {shape:'rhino', n:'Paraceratherium', m:8, era:'cenozoic', on:false},
+  {shape:'stegosaur', n:'Stegosaurus', m:9, era:'mesozoic', on:false},
+  {shape:'theropod', n:'Allosaurus', m:9, era:'mesozoic', on:false},
+  {shape:'theropod', n:'Tyrannosaurus rex', m:12, era:'mesozoic', on:true},
+  {shape:'spinosaur', n:'Spinosaurus', m:15, era:'mesozoic', on:false},
+  {shape:'shark', n:'Megalodon', m:18, era:'cenozoic', on:true},
+  {shape:'sauropod', n:'Brachiosaurus', m:22, era:'mesozoic', on:false},
+  {shape:'whale', n:'Blue Whale', m:30, era:'cenozoic', on:true},
+  {shape:'sauropod', n:'Argentinosaurus', m:35, era:'mesozoic', on:false},
+];
+const SIZE_PPM = 16;
+function humanSVG(color){
+  const light=shade(color,45), dark=shade(color,-38), gid='cg'+(_cgid++);
+  return `<svg class="cre" viewBox="0 0 34 100" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Human, 1.8 metres">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs>
+    <g fill="url(#${gid})"><circle cx="17" cy="11" r="9"/>
+      <path d="M9,25 h16 c3,0 5,3 5,7 l-3,27 h-4 l-2,-24 h-2 l-2,24 h-4 l-3,-27 c0,-4 2,-7 5,-7 Z"/>
+      <path d="M14,58 l-2,40 h5 l2,-34 Z"/><path d="M20,58 l2,40 h-5 l-2,-34 Z"/>
+      <path d="M9,29 l-6,21 3,1.5 6,-17 Z"/><path d="M25,29 l6,21 -3,1.5 -6,-17 Z"/></g></svg>`;
+}
+function buildSizePicker(){
+  $('#sizePicker').innerHTML = SIZES.map((s,i)=>`<button data-size="${i}" class="${s.on?'on':''}">${s.n}</button>`).join('');
+}
+function renderSizes(){
+  const sel=SIZES.filter(s=>s.on);
+  $('#sizeStage').innerHTML = sel.map(s=>{
+    const era=ERAS.find(e=>e.key===s.era)||ERAS[5];
+    let box, sizeTxt;
+    if(s.shape==='__human'){
+      const hpx=Math.round(s.m*SIZE_PPM);
+      box=`<div class="size-cre size-h" style="height:${hpx}px">${humanSVG(era.color)}</div>`;
+      sizeTxt=s.m+' m tall';
+    } else {
+      const wpx=Math.round(s.m*SIZE_PPM);
+      box=`<div class="size-cre" style="width:${wpx}px">${creatureSVGShape(s.shape,s.era,'',s.n)}</div>`;
+      sizeTxt=(s.m>=1?s.m+' m':(s.m*100)+' cm')+' long';
+    }
+    return `<div class="size-item">${box}<div class="size-label">${s.n}<span>${sizeTxt}</span></div></div>`;
+  }).join('');
+  if(!sel.length) $('#sizeStage').innerHTML='<div style="color:var(--ink-faint);padding:30px">Pick a creature above to begin.</div>';
+}
+
+/* ============================================================
+   SEARCH / JUMP PALETTE
+   ============================================================ */
+let SEARCH_INDEX=[], searchList=[], searchSel=0;
+function buildSearchIndex(){
+  SEARCH_INDEX=[];
+  const add=(label,sub,kind,act)=>SEARCH_INDEX.push({label,sub,kind,act,q:(label+' '+sub+' '+kind).toLowerCase()});
+  [['timeline','Timeline'],['oceans','Oceans'],['life','Life & Biodiversity'],['animals','Animals'],
+   ['humans','Human Evolution'],['sizes','Size Comparison'],['climate','Climate'],
+   ['extinctions','Mass Extinctions'],['scale','Scale of Deep Time'],['quiz','Time Detective Quiz']]
+    .forEach(([v,l])=>add(l,'Jump to section','Section',()=>showView(v)));
+  ERAS.forEach(e=>add(e.name+' Era', `${e.from}–${e.to} Ma`, 'Era', ()=>{ showView('timeline'); stop(); setMya((e.from+e.to)/2); }));
+  EVENTS.forEach(ev=>add(ev.title, fmtAge(ev.mya)+' ago', 'Moment', ()=>{ showView('timeline'); stop(); setMya(ev.mya); }));
+  ANIMALS.forEach((a,i)=>add(a.n, `${(ERAS.find(e=>e.key===a.era)||{}).name} · ${a.when}`, 'Creature', ()=>{ showView('animals'); buildAnimals('all'); openAnimal(i); }));
+}
+function openSearch(){
+  $('#searchModal').classList.add('open'); document.body.classList.add('no-scroll');
+  const inp=$('#searchInput'); inp.value=''; renderSearch(''); setTimeout(()=>inp.focus(),30);
+}
+function closeSearch(){ $('#searchModal').classList.remove('open'); document.body.classList.remove('no-scroll'); }
+function renderSearch(q){
+  q=(q||'').trim().toLowerCase();
+  searchList = q ? SEARCH_INDEX.filter(x=>x.q.includes(q)).slice(0,40) : SEARCH_INDEX.filter(x=>x.kind==='Section');
+  searchSel=0;
+  $('#searchResults').innerHTML = searchList.length
+    ? searchList.map((x,i)=>`<div class="sr${i===0?' on':''}" data-sr="${i}"><span class="sr-kind">${x.kind}</span><span class="sr-l">${x.label}</span><span class="sr-sub">${x.sub}</span></div>`).join('')
+    : `<div class="sr-empty">No matches for “${q}”</div>`;
+}
+function searchMove(d){
+  if(!searchList.length)return;
+  searchSel=Math.max(0,Math.min(searchList.length-1,searchSel+d));
+  const items=$$('#searchResults .sr');
+  items.forEach((el,i)=>el.classList.toggle('on',i===searchSel));
+  if(items[searchSel]) items[searchSel].scrollIntoView({block:'nearest'});
+}
+function searchActivate(i){ const x=searchList[i]; if(!x)return; closeSearch(); x.act(); toast('→ '+x.label); }
+
+/* ============================================================
+   STORY NARRATION (Web Speech API)
+   ============================================================ */
+let narrateOn=false;
+function speakStory(text){
+  if(!('speechSynthesis' in window)) return;
+  const tok=++story._tok;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.96; u.pitch=1;
+  u.onend=()=>{ if(tok!==story._tok)return;
+    if(narrateOn && story.playing && $('#storyOverlay').classList.contains('on')){
+      story.i<STORY.length-1 ? storyGo(story.i+1) : storyPlay(false);
+    }};
+  window.speechSynthesis.speak(u);
+}
+function toggleNarrate(){
+  if(!('speechSynthesis' in window)){ toast('Narration not supported here'); return; }
+  narrateOn=!narrateOn;
+  $('#storyNarrateIcon').innerHTML = narrateOn
+    ? '<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>'
+    : '<path d="M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/>';
+  $('#storyNarrate').classList.toggle('on-ctrl', narrateOn);
+  if(narrateOn){ clearTimeout(story.timer); speakStory(STORY[story.i].x); }
+  else { window.speechSynthesis.cancel(); resetStoryTimer(); }
+  toast(narrateOn?'🔊 Narration on':'🔇 Narration off');
+}
+
+/* ============================================================
+   STORY MODE — a guided, narrated journey
+   ============================================================ */
+const STORY = [
+  {mya:4600, t:'From Dust, a World', x:'Four and a half billion years ago there was no Earth — only a disk of dust and gas circling a young Sun. Grain by grain, gravity gathered it into a glowing, molten sphere. Our world was born in fire.'},
+  {mya:4400, t:'Oceans from the Sky', x:'As the surface cooled, water — from volcanic steam and icy comets — fell as rain for thousands of years, filling the first warm, restless oceans. The stage for life was set.'},
+  {mya:4000, t:'The First Spark', x:'Somewhere in those early seas, chemistry became biology. A single microscopic cell began to copy itself. Every living thing that would ever exist descends from that first faint spark.'},
+  {mya:2400, t:'The Breath of the World', x:'For over a billion years, tiny microbes quietly breathed out oxygen — until it flooded the sky. It poisoned much of early life, but it also lit the fuse for everything complex to come.'},
+  {mya:541, t:'Life Explodes', x:'Then, almost overnight in geological time, the oceans erupted with life. Eyes, shells, claws and the first great predators appeared. The Cambrian Explosion drew the blueprint for nearly every animal alive today.'},
+  {mya:375, t:'The Great Step Ashore', x:'Plants had already turned the land green. Now a brave lineage of fish, with sturdy fins and gulping lungs, hauled itself out of the water. Their descendants — including us — would inherit the continents.'},
+  {mya:252, t:'The Great Dying', x:'Ninety percent of all species vanished in the worst catastrophe life has ever faced. Yet from the ashes of the Permian, the survivors would build an entirely new world — the age of dinosaurs.'},
+  {mya:180, t:'The Age of Giants', x:'For 165 million years, dinosaurs ruled every horizon — from long-necked titans browsing the treetops to fearsome hunters below. Feathered cousins took to the air as the first birds.'},
+  {mya:66,  t:'Fire from the Sky', x:'In a single terrible day, a ten-kilometre asteroid struck the Earth. Firestorms, tsunamis and a darkened sky ended the reign of the dinosaurs — and opened the door for the small, furry survivors: the mammals.'},
+  {mya:7,   t:'A New Kind of Ape', x:'In the forests and grasslands of Africa, an ape lineage stood up and began to walk. Slowly, across millions of years, they made tools, tamed fire, and learned to imagine.'},
+  {mya:0.012,t:'The Human Dawn', x:'As the last Ice Age faded, humans planted the first seeds and built the first villages. Cities, writing, science and art followed in a mere heartbeat of Earth-time.'},
+  {mya:0,   t:'The Story Continues', x:'And here we are — one species, aware of the whole 4.6-billion-year journey that made us. The next chapter of Earth’s story is the first one a single species gets to help write.'},
+];
+let story={i:0,playing:false,timer:null,_tok:0};
+function buildStoryDots(){
+  $('#storyDots').innerHTML=STORY.map((s,k)=>`<span class="sd${k===story.i?' on':''}" data-sd="${k}" title="${s.t}"></span>`).join('');
+}
+function storyGo(i){
+  story.i=Math.max(0,Math.min(STORY.length-1,i));
+  const s=STORY[story.i]; stop(); setMya(s.mya);
+  $('#storyChapter').textContent=`Chapter ${story.i+1} of ${STORY.length}`;
+  $('#storyTitle').textContent=s.t; $('#storyText').textContent=s.x;
+  buildStoryDots();
+  if(narrateOn) speakStory(s.x);
+}
+function storyPlay(on){
+  story.playing=on;
+  $('#storyPlayIcon').innerHTML = on?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';
+  clearTimeout(story.timer);
+  if(on){ if(narrateOn) speakStory(STORY[story.i].x); else resetStoryTimer(); }
+  else if('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+function resetStoryTimer(){
+  clearTimeout(story.timer);
+  if(story.playing && !narrateOn){ story.timer=setTimeout(()=>{
+    if(story.i<STORY.length-1){ storyGo(story.i+1); resetStoryTimer(); } else storyPlay(false);
+  }, 8500); }
+}
+function storyOpen(){
+  showView('timeline'); story.i=0;
+  $('#storyOverlay').classList.add('on');
+  storyGo(0); storyPlay(true);
+}
+function storyNext(){ if(story.i>=STORY.length-1){ storyPlay(false); return; } storyGo(story.i+1); if(story.playing)resetStoryTimer(); }
+function storyPrev(){ storyGo(story.i-1); if(story.playing)resetStoryTimer(); }
+function storyExit(){ $('#storyOverlay').classList.remove('on'); storyPlay(false); if('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+
+/* ============================================================
+   THEME (dark / light)
+   ============================================================ */
+function setTheme(t){
+  const light = t==='light';
+  document.body.classList.toggle('light', light);
+  const tb=$('#themeBtn'); if(tb) tb.textContent = light?'☀️':'🌙';
+  try{ localStorage.setItem('chrono-theme', t); }catch(e){}
+}
+function toggleTheme(){ setTheme(document.body.classList.contains('light')?'dark':'light'); }
+
+/* ============================================================
+   NEW EVENT LISTENERS
+   ============================================================ */
+$('#btnStory').addEventListener('click',storyOpen);
+$('#storyNarrate').addEventListener('click',toggleNarrate);
+$('#searchBtn').addEventListener('click',openSearch);
+$('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+$('#searchInput').addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'){ e.preventDefault(); searchMove(1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); searchMove(-1); }
+  else if(e.key==='Enter'){ e.preventDefault(); searchActivate(searchSel); }
+  else if(e.key==='Escape'){ closeSearch(); }
+});
+$('#searchResults').addEventListener('click',e=>{ const r=e.target.closest('[data-sr]'); if(r) searchActivate(+r.dataset.sr); });
+$('#searchModal').addEventListener('click',e=>{ if(e.target.id==='searchModal') closeSearch(); });
+$('#sizePicker').addEventListener('click',e=>{ const b=e.target.closest('[data-size]'); if(b){ const i=+b.dataset.size; SIZES[i].on=!SIZES[i].on; buildSizePicker(); renderSizes(); } });
+$('#storyPrev').addEventListener('click',storyPrev);
+$('#storyNext').addEventListener('click',storyNext);
+$('#storyPlay').addEventListener('click',()=>storyPlay(!story.playing));
+$('#storyExit').addEventListener('click',storyExit);
+$('#storyDots').addEventListener('click',e=>{ const d=e.target.closest('[data-sd]'); if(d){ storyGo(+d.dataset.sd); if(story.playing)resetStoryTimer(); } });
+$('#themeBtn').addEventListener('click',toggleTheme);
+$('#btnShare').addEventListener('click',shareMoment);
+$('#btnPostcard').addEventListener('click',openPostcard);
+$('#pcClose').addEventListener('click',closePostcard);
+$('#pcModal').addEventListener('click',e=>{ if(e.target.id==='pcModal')closePostcard(); });
+$('#pcCopyLink').addEventListener('click',()=>{ history.replaceState(null,'',currentLink()); copyText(currentLink(),'🔗 Link copied'); });
+document.addEventListener('click',e=>{
+  const opt=e.target.closest('.quiz-opt'); if(opt) quizAnswer(opt.dataset.era);
+  if(e.target.closest('#quizAgain')) quizStart();
+});
+$('#btnSound').addEventListener('click',toggleSound);
+$('#btnTrace').addEventListener('click',traceLineage);
+document.addEventListener('click',e=>{
+  const n=e.target.closest('[data-ln]');
+  if(n){ const l=LINEAGE[+n.dataset.ln]; stop(); setMya(l.mya); highlightLineage(+n.dataset.ln);
+    $('#lineageNote').textContent=l.note; toast(l.t); }
+  const sm=e.target.closest('[data-sm]');
+  if(sm){ scaleMetric=sm.dataset.sm; buildScaleMetrics(); renderScale(); }
+});
+$('#ageInput')?.addEventListener('input',renderScale);
+$('#scenario')?.addEventListener('input',e=>updateScenario(+e.target.value));
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  try{ setTheme(localStorage.getItem('chrono-theme')||'dark'); }catch(e){ setTheme('dark'); }
+  buildOceanTime(); buildOceanDepth(); buildLife();
+  buildAnimals('all'); buildHumans(); buildExtinctions();
+  buildVitals(); buildDrift(); buildLineage();
+  buildSizePicker(); renderSizes(); buildSearchIndex();
+  buildScaleMetrics(); renderScale();
+  buildDeepChart(); buildModernChart(); updateScenario(1);
+  renderEras();
+  resizeSky();
+  setMya(T_START);
+  // deep-link support: #t=<millions of years ago>
+  const hm = (location.hash||'').match(/t=([\d.]+)/);
+  if(hm){ showView('timeline'); setMya(parseFloat(hm[1])); }
+  requestAnimationFrame(drawSky);
+  window.addEventListener('resize',()=>{ resizeSky(); positionHandle(); renderEras(); });
+}
+init();
+</script>
+</body>
+</html>
